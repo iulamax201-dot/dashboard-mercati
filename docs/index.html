@@ -134,6 +134,31 @@
   .bullets li:before{content:"—";position:absolute;left:0;color:var(--muted)}
   .disclaimer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);color:var(--muted);font-size:11.5px;line-height:1.6}
   .loading{text-align:center;padding:70px;color:var(--muted)}
+  /* ---------- animazioni e movimenti fluidi ---------- */
+  html{scroll-behavior:smooth}
+  .quote,.tab,a{transition:transform .3s cubic-bezier(.2,.75,.2,1),border-color .3s ease,color .25s ease,box-shadow .3s ease}
+  .quote:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(28,27,25,.09)}
+  .tab:hover{color:var(--ink)}
+  .news .it .h{transition:color .25s ease}
+  .news .it:hover .h{color:var(--navy)}
+  .rot tr .fill{transition:width .9s cubic-bezier(.22,.8,.24,1)}
+  .masthead h1{background:linear-gradient(90deg,var(--ink) 0%,var(--ink) 100%);}
+  .meter .bar{overflow:hidden}
+  .meter .bar span{transition:width 1s cubic-bezier(.22,.85,.25,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  .anim-rise{animation:rise .62s cubic-bezier(.2,.78,.22,1) both}
+  @keyframes appfade{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .app-fade{animation:appfade .45s ease}
+  @keyframes drawline{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--up);margin-right:6px;position:relative;vertical-align:middle}
+  .live:after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--up);animation:pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite}
+  @keyframes pulse{0%{transform:scale(1);opacity:.5}70%{transform:scale(3);opacity:0}100%{opacity:0}}
+  .masthead h1{overflow:hidden}
+  @media (prefers-reduced-motion: reduce){
+    *,*:before,*:after{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}
+    .meter .bar span{width:var(--fw,0)!important}
+  }
 </style>
 </head>
 <body>
@@ -164,7 +189,8 @@ const fmt = n => (n==null?'—':FMT.format(n));
 const pct = n => (n==null?'—':(n>=0?'+':'')+FMT.format(n)+'%');
 const cls = n => n==null?'flat':(n>0?'up':n<0?'down':'flat');
 const UP='#17663b', DOWN='#a12a1d', GOLD='#8a6a1e';
-let CURRENT=0, DATA=null;
+let CURRENT=0, DATA=null, LAST_STAMP=null, STARTED=false;
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 async function load(){
   try{
@@ -172,7 +198,11 @@ async function load(){
     DATA = await r.json();
     try{ const rs = await fetch('summary.json?_='+Date.now(),{cache:'no-store'});
       if(rs.ok) DATA.summary = await rs.json(); }catch(_){}
-    render();
+    const stamp = DATA.updated_at;
+    if(STARTED && stamp===LAST_STAMP) return;   // nessun cambiamento: non ridisegnare
+    const mode = STARTED ? 'update' : 'first';
+    LAST_STAMP = stamp; STARTED = true;
+    render(mode);
   }catch(e){
     document.getElementById('app').innerHTML =
       '<div class="loading">Impossibile caricare i dati. Attendere il primo aggiornamento.</div>';
@@ -185,17 +215,20 @@ function meterColor(v,invert){
 }
 function meterHTML(label,val,sub,invert){
   const c = meterColor(val,invert);
-  return '<div class="meter"><div class="top"><span>'+label+'</span><b class="tnum" style="color:'+c+'">'+fmt(val)+'<span style="font-size:12px;color:var(--muted)"> /100</span></b></div>'+
-    '<div class="bar"><span style="width:'+Math.max(0,Math.min(100,val))+'%;background:'+c+'"></span></div>'+
+  const w = Math.max(0,Math.min(100,val));
+  return '<div class="meter"><div class="top"><span>'+label+'</span>'+
+    '<b><span class="tnum" data-count="'+val+'" style="color:'+c+'">'+fmt(val)+'</span>'+
+    '<span style="font-size:12px;color:var(--muted)"> /100</span></b></div>'+
+    '<div class="bar"><span data-w="'+w+'" style="width:0%;background:'+c+'"></span></div>'+
     '<small>'+sub+'</small></div>';
 }
 
-function render(){
+function render(mode){
   const m = DATA.market, d = new Date(DATA.updated_at);
   const pc = m.phase==='Bullish'?UP:m.phase==='Bearish'?DOWN:GOLD;
   document.getElementById('meta').innerHTML =
     (DATA.demo?'<span class="demo">Dati dimostrativi</span> &middot; ':'')+
-    'Aggiornato '+d.toLocaleString('it-IT')+' &middot; '+DATA.source;
+    '<span class="live"></span>Aggiornato '+d.toLocaleString('it-IT')+' &middot; '+DATA.source;
 
   let h = '';
   // LEAD: fase + meter
@@ -217,7 +250,7 @@ function render(){
     h += '<div class="quote'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+
       '<canvas class="spark" id="sp-'+i+'"></canvas>'+
       '<div class="nm">'+ix.name+'</div><div class="sym">'+ix.symbol+'</div>'+
-      '<div class="px tnum">'+fmt(ix.price)+'</div>'+
+      '<div class="px tnum" data-count="'+ix.price+'">'+fmt(ix.price)+'</div>'+
       '<div class="chg '+cls(ix.change_pct)+' tnum">'+pct(ix.change_pct)+' &nbsp;'+(ix.change>=0?'+':'')+fmt(ix.change)+'</div>'+
       '<div><span class="verdict vd-'+ix.verdict+'">'+ix.verdict+'</span></div>'+
       '<div class="ath">Dai massimi storici &nbsp;<b style="color:'+ac+'" class="tnum">'+(ix.at_ath?'ai massimi':pct(ix.pct_from_ath))+'</b></div>'+
@@ -235,8 +268,38 @@ function render(){
   document.getElementById('app').innerHTML = h;
   DATA.indices.forEach((ix,i)=>buildSpark('sp-'+i, ix));
   renderDetail();
+  motion(mode);
 }
-function select(i){ CURRENT=i; render(); }
+function select(i){ CURRENT=i; render('tab'); }
+
+// orchestrazione dei movimenti fluidi (eseguita in modo sincrono: nessun flash)
+function motion(mode){
+  // riempimento barre-metro (parte da 0 e cresce)
+  requestAnimationFrame(()=>document.querySelectorAll('.meter .bar span').forEach(s=>{
+    s.style.setProperty('--fw',(s.dataset.w||0)+'%'); s.style.width=(s.dataset.w||0)+'%'; }));
+  requestAnimationFrame(()=>document.querySelectorAll('.rot .fill').forEach(f=>{
+    if(f.dataset.w!=null) f.style.width=f.dataset.w+'%'; }));
+  if(REDUCE) return;
+  if(mode==='first'){
+    const els=[...document.querySelectorAll('.panel, .sec-h, .quote')];
+    els.forEach((el,i)=>{ el.style.animationDelay=Math.min(i*50,650)+'ms'; el.classList.add('anim-rise'); });
+    countUps();
+  } else if(mode==='tab'){
+    document.querySelectorAll('#detail .panel').forEach((el,i)=>{
+      el.style.animationDelay=Math.min(i*45,420)+'ms'; el.classList.add('anim-rise'); });
+  } else { // update
+    const app=document.getElementById('app'); app.classList.remove('app-fade');
+    void app.offsetWidth; app.classList.add('app-fade');
+  }
+}
+function countUps(){
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const to=parseFloat(el.dataset.count); if(isNaN(to)){return;}
+    const t0=performance.now(), dur=850;
+    (function fr(t){ const p=Math.min(1,(t-t0)/dur); const e=1-Math.pow(1-p,3);
+      el.textContent=FMT.format(to*e); if(p<1)requestAnimationFrame(fr); else el.textContent=FMT.format(to); })(t0);
+  });
+}
 
 function renderDetail(){
   const ix = DATA.indices[CURRENT], t = ix.technical, o = ix.outlook;
@@ -334,8 +397,8 @@ function rotationHTML(){
   h += '<table class="rot"><tbody>';
   r.sectors.forEach(s=>{
     const v=s.score||0, pos=v>=0, w=Math.min(50,Math.abs(v)/maxAbs*50);
-    const fill = pos?'<div class="fill" style="left:50%;width:'+w+'%;background:'+UP+'"></div>'
-                    :'<div class="fill" style="right:50%;width:'+w+'%;background:'+DOWN+'"></div>';
+    const fill = pos?'<div class="fill" data-w="'+w+'" style="left:50%;width:0%;background:'+UP+'"></div>'
+                    :'<div class="fill" data-w="'+w+'" style="right:50%;width:0%;background:'+DOWN+'"></div>';
     h += '<tr><td class="rk tnum">'+s.rank+'</td>'+
       '<td class="nm">'+s.name+' <span class="grp">'+s.group+'</span></td>'+
       '<td class="barcell"><div class="track"><div class="mid"></div>'+fill+'</div></td>'+

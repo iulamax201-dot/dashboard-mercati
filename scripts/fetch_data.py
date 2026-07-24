@@ -16,7 +16,9 @@ import json
 import os
 import sys
 import time
+import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
+from urllib.parse import quote_plus
 
 import requests
 
@@ -169,28 +171,150 @@ def fetch_ath(symbol: str) -> Optional[float]:
     return None
 
 
-def fetch_news(symbol: str, count: int = 5) -> List[Dict]:
-    """Notizie recenti collegate all'indice."""
-    url = "https://query1.finance.yahoo.com/v1/finance/search"
-    params = {"q": symbol, "newsCount": count, "quotesCount": 0}
+# notizie per indice (query in italiano su Google News)
+NEWS_QUERY = {
+    "^GSPC": "S&P 500 borsa",
+    "^DJI": "Dow Jones borsa",
+    "^IXIC": "Nasdaq borsa",
+}
+
+# link permanenti agli hub di ricerca istituzionale (sempre disponibili)
+RESEARCH_LINKS = [
+    {"name": "Goldman Sachs — Insights", "url": "https://www.goldmansachs.com/insights"},
+    {"name": "J.P. Morgan — Guide to the Markets",
+     "url": "https://am.jpmorgan.com/it/it/asset-management/adv/insights/market-insights/guide-to-the-markets/"},
+    {"name": "Fidelity — Settori e mercati",
+     "url": "https://www.fidelity.com/sector-investing/overview"},
+    {"name": "Il Sole 24 Ore — Finanza e Mercati",
+     "url": "https://www.ilsole24ore.com/sez/finanza"},
+    {"name": "Milano Finanza", "url": "https://www.milanofinanza.it/"},
+    {"name": "Investing.com Italia", "url": "https://it.investing.com/"},
+]
+
+
+def _clean(txt: str) -> str:
+    return " ".join((txt or "").split()).strip()
+
+
+def fetch_google_news(query: str, count: int = 6) -> List[Dict]:
+    """Notizie da Google News RSS (italiano). Aggrega Il Sole 24 Ore, Milano
+    Finanza, Investing e articoli che riportano le view di GS/JPM/Fidelity."""
+    url = ("https://news.google.com/rss/search?q=" + quote_plus(query) +
+           "&hl=it&gl=IT&ceid=IT:it")
     try:
-        r = SESSION.get(url, params=params, timeout=15)
+        r = SESSION.get(url, timeout=15)
         if r.status_code != 200:
             return []
+        root = ET.fromstring(r.content)
         out = []
-        for it in r.json().get("news", [])[:count]:
-            ts = it.get("providerPublishTime")
+        for item in list(root.iter("item"))[:count]:
+            title = _clean(item.findtext("title", ""))
+            link = item.findtext("link", "")
+            pub = item.findtext("pubDate", "")
+            src_el = item.find("{http://www.w3.org/2005/Atom}source")
+            source = src_el.text if src_el is not None else None
+            if source is None:
+                source = item.findtext("source", "")
+            # il titolo di Google News finisce spesso con " - Testata"
+            if source is None and " - " in title:
+                source = title.rsplit(" - ", 1)[-1]
+            date = None
+            if pub:
+                try:
+                    date = dt.datetime.strptime(
+                        pub[:25], "%a, %d %b %Y %H:%M:%S").strftime("%Y-%m-%d %H:%M")
+                except Exception:  # noqa: BLE001
+                    date = pub[:16]
             out.append({
-                "title": it.get("title", "")[:180],
-                "publisher": it.get("publisher", ""),
-                "link": it.get("link", ""),
-                "date": dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
-                if ts else None,
+                "title": title[:200],
+                "publisher": _clean(source or ""),
+                "link": link,
+                "date": date,
             })
         return out
     except Exception as e:  # noqa: BLE001
-        print(f"  Notizie {symbol} non disponibili: {e}")
+        print(f"  Google News '{query}' non disponibile: {e}")
         return []
+
+
+def fetch_news(symbol: str, count: int = 5) -> List[Dict]:
+    """Notizie recenti collegate all'indice (Google News, italiano)."""
+    q = NEWS_QUERY.get(symbol, symbol)
+    news = fetch_google_news(q, count)
+    if news:
+        return news
+    # fallback: Yahoo search
+    try:
+        r = SESSION.get("https://query1.finance.yahoo.com/v1/finance/search",
+                        params={"q": symbol, "newsCount": count, "quotesCount": 0},
+                        timeout=15)
+        if r.status_code == 200:
+            out = []
+            for it in r.json().get("news", [])[:count]:
+                ts = it.get("providerPublishTime")
+                out.append({"title": it.get("title", "")[:200],
+                            "publisher": it.get("publisher", ""),
+                            "link": it.get("link", ""),
+                            "date": dt.datetime.utcfromtimestamp(ts).strftime(
+                                "%Y-%m-%d %H:%M") if ts else None})
+            return out
+    except Exception:  # noqa: BLE001
+        pass
+    return []
+
+
+# 11 settori USA (SPDR) con classificazione ciclico/difensivo
+SECTORS = [
+    {"sym": "XLK", "name": "Tecnologia", "group": "Ciclico"},
+    {"sym": "XLC", "name": "Comunicazioni", "group": "Ciclico"},
+    {"sym": "XLY", "name": "Consumi discrezionali", "group": "Ciclico"},
+    {"sym": "XLF", "name": "Finanziari", "group": "Ciclico"},
+    {"sym": "XLI", "name": "Industriali", "group": "Ciclico"},
+    {"sym": "XLB", "name": "Materiali", "group": "Ciclico"},
+    {"sym": "XLE", "name": "Energia", "group": "Ciclico"},
+    {"sym": "XLV", "name": "Sanità", "group": "Difensivo"},
+    {"sym": "XLP", "name": "Beni di prima necessità", "group": "Difensivo"},
+    {"sym": "XLU", "name": "Utilities", "group": "Difensivo"},
+    {"sym": "XLRE", "name": "Immobiliare", "group": "Difensivo"},
+]
+
+
+def fetch_closes(symbol: str, rng: str = "6mo") -> Optional[List[float]]:
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    try:
+        r = SESSION.get(url, params={"range": rng, "interval": "1d"}, timeout=20)
+        if r.status_code != 200:
+            return None
+        q = r.json()["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        closes = [float(c) for c in q if c is not None]
+        return closes if len(closes) > 30 else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def fetch_sectors() -> List[Dict]:
+    out = []
+    for sp in SECTORS:
+        closes = fetch_closes(sp["sym"])
+        if not closes:
+            continue
+        import indicators as ind
+        price = closes[-1]
+        r1 = ind.pct_return(closes, 21)
+        r3 = ind.pct_return(closes, 63)
+        rsi = ind.last_valid(ind.rsi(closes, 14))
+        sma50 = ind.last_valid(ind.sma(closes, 50))
+        score = ((r1 or 0) * 0.5 + (r3 or 0) * 0.5)
+        out.append({
+            "symbol": sp["sym"], "name": sp["name"], "group": sp["group"],
+            "ret_1m": round(r1, 1) if r1 is not None else None,
+            "ret_3m": round(r3, 1) if r3 is not None else None,
+            "rsi": round(rsi, 0) if rsi is not None else None,
+            "above_sma50": (price > sma50) if sma50 is not None else None,
+            "score": round(score, 2),
+        })
+        time.sleep(0.25)
+    return out
 
 
 def build() -> Dict:
@@ -219,12 +343,29 @@ def build() -> Dict:
         )
         time.sleep(0.5)
 
+    # notizie di mercato (italiane) e ricerca istituzionale (GS/JPM/Fidelity)
+    market_news = fetch_google_news("borsa mercati Wall Street Europa", 7)
+    research_news = fetch_google_news(
+        '("Goldman Sachs" OR "JP Morgan" OR "J.P. Morgan" OR Fidelity) '
+        '(mercati OR outlook OR previsioni OR settori OR azioni)', 7)
+
+    # rotazione settoriale
+    print("Scarico settori per la rotazione...")
+    sectors = fetch_sectors()
+    rotation = analysis.build_rotation(sectors)
+
+    market = analysis.market_summary(indices_out)
+    market["news_market"] = market_news
+    market["news_research"] = research_news
+    market["research_links"] = RESEARCH_LINKS
+
     return {
         "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "source": source,
         "demo": False,
-        "market": analysis.market_summary(indices_out),
+        "market": market,
         "indices": indices_out,
+        "rotation": rotation,
     }
 
 

@@ -60,8 +60,15 @@ dimostrativi** (chiaramente etichettati come "demo").
 **Outlook & notizie**
 - Cosa **conferma** e cosa **cambierebbe** il trend (livelli chiave: SMA200,
   SMA50, massimi 52 settimane)
-- **Notizie recenti** reali per ogni indice (macro, geopolitica, trimestrali)
-  da Yahoo Finance, aggiornate insieme ai dati
+- **Notizie recenti** per ogni indice e a livello di mercato, da fonti italiane
+  (Il Sole 24 Ore, Milano Finanza, Investing via Google News) e articoli/studi
+  che riportano le view di **Goldman Sachs, J.P. Morgan, Fidelity**
+- Link diretti agli hub di ricerca ufficiali di GS / JPM / Fidelity
+
+**Rotazione settoriale**
+- Momentum degli 11 settori USA (ETF SPDR), ordinati per forza relativa
+- Segnale **Risk-on/ciclico** vs **Risk-off/difensivo** con lettura del ciclo
+  economico (modello classico di rotazione settoriale)
 
 > Nota: outlook e verdetti sono generati da indicatori tecnici e livelli di
 > prezzo; le notizie sono headline pubbliche. Non sono previsioni.

@@ -63,6 +63,14 @@ def build_index_analysis(
         v_sma50 is not None and v_sma200 is not None and v_sma50 > v_sma200
     )
 
+    # massimo storico (serve gia' per il rischio correzione)
+    ath_val = ath if ath else max(closes)
+    if price > ath_val:
+        ath_val = price
+    pct_from_ath = (price / ath_val - 1) * 100 if ath_val else 0.0
+    at_ath = pct_from_ath >= -0.5
+    pe = (fundamentals or {}).get("pe")
+
     # ---------- VERDETTO (punteggio -> 0..100) ----------
     score = 50.0
     reasons: List[Dict] = []
@@ -122,57 +130,72 @@ def build_index_analysis(
         verdict = "Neutrale"
 
     # ---------- RISCHIO CORREZIONE (0..100, euristico) ----------
+    # Base di rischio piu' realistica: mercati vicini ai record e tirati sulle
+    # medie hanno storicamente una probabilita' di pull-back non trascurabile.
     risk = 0.0
     risk_reasons: List[str] = []
-    if v_rsi is not None and v_rsi > 70:
-        risk += 30
+
+    # 1) RSI / momentum
+    if v_rsi is not None and v_rsi >= 70:
+        risk += 26
         risk_reasons.append(f"RSI ipercomprato ({v_rsi:.0f})")
-    elif v_rsi is not None and v_rsi > 65:
-        risk += 15
+    elif v_rsi is not None and v_rsi >= 63:
+        risk += 14
         risk_reasons.append(f"RSI elevato ({v_rsi:.0f})")
 
+    # 2) estensione dalla media a 200 giorni
     if v_sma200 is not None and v_sma200 > 0:
         stretch = (price / v_sma200 - 1) * 100
         if stretch > 12:
-            risk += 25
-            risk_reasons.append(f"Prezzo {stretch:.0f}% sopra la SMA200 (molto esteso)")
-        elif stretch > 7:
+            risk += 22
+            risk_reasons.append(f"Prezzo {stretch:.0f}% sopra la media 200g (molto esteso)")
+        elif stretch > 6:
             risk += 12
-            risk_reasons.append(f"Prezzo {stretch:.0f}% sopra la SMA200 (esteso)")
+            risk_reasons.append(f"Prezzo {stretch:.0f}% sopra la media 200g (esteso)")
 
+    # 3) vicinanza ai massimi storici (aria piu' rarefatta)
+    if pct_from_ath >= -1:
+        risk += 18
+        risk_reasons.append("Sui massimi storici: poco margine, sensibile a prese di profitto")
+    elif pct_from_ath >= -4:
+        risk += 10
+        risk_reasons.append("A ridosso dei massimi storici")
+
+    # 4) valutazione (P/E dell'ETF proxy)
+    if pe:
+        if pe > 26:
+            risk += 12
+            risk_reasons.append(f"Valutazione elevata (P/E ~{pe:.0f})")
+        elif pe > 22:
+            risk += 6
+            risk_reasons.append(f"Valutazione sopra media (P/E ~{pe:.0f})")
+
+    # 5) Bollinger e volatilita'
     if v_bb_up is not None and price > v_bb_up:
-        risk += 15
+        risk += 12
         risk_reasons.append("Prezzo oltre la banda di Bollinger superiore")
-
-    # volatilita' recente (deviazione dei rendimenti giornalieri, 20g)
     vol = _recent_volatility(closes, 20)
     hist_vol = _recent_volatility(closes[:-20] or closes, 20)
-    if vol is not None and hist_vol is not None and hist_vol > 0 and vol > hist_vol * 1.6:
-        risk += 15
+    if vol is not None and hist_vol is not None and hist_vol > 0 and vol > hist_vol * 1.5:
+        risk += 12
         risk_reasons.append("Volatilita' recente in aumento")
 
+    # se e' gia' in corso una correzione, il rischio di ulteriore eccesso cala
     if drawdown < -10:
-        # gia' in correzione: il rischio di ulteriore ipercomprato scende
-        risk = max(0.0, risk - 15)
+        risk = max(0.0, risk - 18)
+        risk_reasons.append(f"Gia' in correzione ({drawdown:.0f}% dai massimi del periodo)")
 
     risk = max(0.0, min(100.0, risk))
-    if risk >= 60:
+    if risk >= 55:
         risk_label = "Alto"
-    elif risk >= 30:
+    elif risk >= 28:
         risk_label = "Medio"
     else:
         risk_label = "Basso"
     if not risk_reasons:
         risk_reasons.append("Nessun segnale di eccesso rilevante al momento")
 
-    # ---------- MASSIMO STORICO (ATH) ----------
-    # ath passato dal fetcher (range max); fallback al massimo dello storico noto
-    ath_val = ath if ath else max(closes)
-    if price > ath_val:
-        ath_val = price
-    pct_from_ath = (price / ath_val - 1) * 100 if ath_val else 0.0
-    at_ath = pct_from_ath >= -0.5  # entro lo 0,5% dal record
-
+    # ATH e pct_from_ath sono gia' stati calcolati sopra (servono al rischio)
     # ---------- OUTLOOK: cosa conferma / cambia il trend ----------
     outlook = _build_outlook(verdict, price, v_sma50, v_sma200, v_rsi,
                              high_52, low_52)
@@ -294,6 +317,49 @@ def _recent_volatility(closes: List[float], period: int) -> Optional[float]:
 
 def _r(v: Optional[float], nd: int = 2) -> Optional[float]:
     return round(v, nd) if v is not None else None
+
+
+def build_rotation(sectors: List[Dict]) -> Dict:
+    """Legge la rotazione settoriale dai settori USA (SPDR).
+
+    Basato sul modello classico di rotazione settoriale legato al ciclo
+    economico: la leadership dei settori CICLICI (tecnologia, finanziari,
+    industriali, consumi) segnala propensione al rischio / fase espansiva;
+    la leadership dei DIFENSIVI (utility, beni di prima necessità, sanità)
+    segnala cautela / fase avanzata o difensiva del ciclo.
+    """
+    if not sectors:
+        return {}
+    ranked = sorted(sectors, key=lambda s: s["score"], reverse=True)
+    for i, s in enumerate(ranked, 1):
+        s["rank"] = i
+
+    top = ranked[:4]
+    cyc_top = sum(1 for s in top if s["group"] == "Ciclico")
+    dif_top = sum(1 for s in top if s["group"] == "Difensivo")
+    if cyc_top >= 3:
+        signal = "Risk-on · ciclico"
+        note = ("Comandano i settori ciclici: propensione al rischio, coerente "
+                "con aspettative di crescita/espansione. Contesto favorevole "
+                "agli asset più aggressivi, ma da confermare con i dati macro.")
+    elif dif_top >= 3:
+        signal = "Risk-off · difensivo"
+        note = ("Comandano i settori difensivi (utility, beni di prima "
+                "necessità, sanità): atteggiamento prudente del mercato, tipico "
+                "delle fasi avanzate del ciclo o di incertezza macro/geopolitica.")
+    else:
+        signal = "Misto · nessuna leadership netta"
+        note = ("Nessuna leadership settoriale netta: mercato indeciso tra "
+                "propensione al rischio e prudenza. Utile attendere una "
+                "direzione più chiara nei prossimi dati.")
+
+    return {
+        "signal": signal,
+        "note": note,
+        "leaders": [f"{s['name']}" for s in ranked[:3]],
+        "laggards": [f"{s['name']}" for s in ranked[-3:][::-1]],
+        "sectors": ranked,
+    }
 
 
 def market_summary(indices: List[Dict]) -> Dict:

@@ -85,12 +85,46 @@ def main():
             )
         )
 
+    # settori demo per la rotazione
+    demo_sectors = []
+    groups = [("XLK","Tecnologia","Ciclico"),("XLC","Comunicazioni","Ciclico"),
+              ("XLY","Consumi discrezionali","Ciclico"),("XLF","Finanziari","Ciclico"),
+              ("XLI","Industriali","Ciclico"),("XLB","Materiali","Ciclico"),
+              ("XLE","Energia","Ciclico"),("XLV","Sanità","Difensivo"),
+              ("XLP","Beni di prima necessità","Difensivo"),("XLU","Utilities","Difensivo"),
+              ("XLRE","Immobiliare","Difensivo")]
+    for sym,nm,grp in groups:
+        r1=round(random.uniform(-6,8),1); r3=round(random.uniform(-10,15),1)
+        demo_sectors.append({"symbol":sym,"name":nm,"group":grp,"ret_1m":r1,
+            "ret_3m":r3,"rsi":round(random.uniform(35,68),0),
+            "above_sma50":random.random()>0.4,"score":round(r1*0.5+r3*0.5,2)})
+    rotation = analysis.build_rotation(demo_sectors)
+
+    market = analysis.market_summary(indices_out)
+    market["news_market"] = [
+        {"title":"Mercati: sintesi dimostrativa (macro e trimestrali)","publisher":"Il Sole 24 Ore","link":"","date":dt.date.today().isoformat()+" 09:00"},
+        {"title":"Wall Street ed Europa: focus tassi e utili (esempio)","publisher":"Milano Finanza","link":"","date":dt.date.today().isoformat()+" 08:30"},
+    ]
+    market["news_research"] = [
+        {"title":"Outlook di mercato — nota dimostrativa","publisher":"Goldman Sachs","link":"","date":dt.date.today().isoformat()},
+        {"title":"Guide to the Markets — aggiornamento (esempio)","publisher":"J.P. Morgan","link":"","date":dt.date.today().isoformat()},
+    ]
+    market["research_links"] = [
+        {"name":"Goldman Sachs — Insights","url":"https://www.goldmansachs.com/insights"},
+        {"name":"J.P. Morgan — Guide to the Markets","url":"https://am.jpmorgan.com/it/it/asset-management/adv/insights/market-insights/guide-to-the-markets/"},
+        {"name":"Fidelity — Settori e mercati","url":"https://www.fidelity.com/sector-investing/overview"},
+        {"name":"Il Sole 24 Ore — Finanza","url":"https://www.ilsole24ore.com/sez/finanza"},
+        {"name":"Milano Finanza","url":"https://www.milanofinanza.it/"},
+        {"name":"Investing.com Italia","url":"https://it.investing.com/"},
+    ]
+
     data = {
         "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "source": "Dati dimostrativi (sintetici)",
         "demo": True,
-        "market": analysis.market_summary(indices_out),
+        "market": market,
         "indices": indices_out,
+        "rotation": rotation,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:

@@ -99,6 +99,24 @@
   .pill{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--panel2);color:var(--muted)}
   .disclaimer{margin-top:26px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
   .loading{text-align:center;padding:60px;color:var(--muted)}
+  .sec-title{font-size:18px;font-weight:700;margin:26px 0 4px}
+  .sigbadge{display:inline-block;padding:4px 12px;border-radius:20px;font-weight:800;font-size:13px}
+  .rot-row{display:grid;grid-template-columns:24px 1.4fr 1fr 88px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+  .rot-row:last-child{border-bottom:none}
+  .rot-rank{color:var(--muted);font-weight:700;text-align:center;font-size:12px}
+  .rot-nm{font-weight:600;font-size:13.5px}
+  .rot-grp{font-size:10px;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
+  .grp-Ciclico{background:rgba(74,158,255,.15);color:var(--accent)}
+  .grp-Difensivo{background:rgba(224,178,60,.15);color:var(--neutral)}
+  .rot-track{position:relative;height:16px;background:var(--panel2);border-radius:5px}
+  .rot-mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+  .rot-fill{position:absolute;top:2px;bottom:2px;border-radius:4px}
+  .rot-val{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip-link{font-size:12px;padding:5px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);text-decoration:none}
+  .chip-link:hover{border-color:var(--accent)}
+  .news2{grid-template-columns:1fr 1fr}
+  @media(max-width:820px){.news2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -182,6 +200,8 @@ function render(){
   html += '<div class="tabs">';
   DATA.indices.forEach((ix,i)=> html += '<div class="tab'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+ix.name+'</div>');
   html += '</div><div id="detail"></div>';
+  html += rotationHTML();     // rotazione settoriale (livello mercato)
+  html += marketNewsHTML();   // notizie di mercato + ricerca istituzionale
 
   document.getElementById('app').innerHTML = html;
   buildGauge('g-score', m.avg_score, phaseColor);
@@ -282,6 +302,62 @@ function renderDetail(){
 function rowH(k,v){return '<div class="row"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>';}
 function retC(l,v){return '<div class="lvl"><div class="n '+cls(v)+'" style="font-size:13px">'+pct(v)+'</div><div class="t">'+l+'</div></div>';}
 function lvl(n,t,c){return '<div class="lvl"><div class="n" style="color:'+c+'">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
+
+function newsItemHTML(n){
+  const tt = n.link?'<a href="'+n.link+'" target="_blank" rel="noopener">'+n.title+'</a>':n.title;
+  return '<div class="news-item"><div class="tt">'+tt+'</div><div class="src">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';
+}
+
+function rotationHTML(){
+  const r = DATA.rotation;
+  if(!r || !r.sectors || !r.sectors.length) return '';
+  const sc = r.signal||'';
+  const col = sc.indexOf('Risk-on')>=0?'var(--bull)':sc.indexOf('Risk-off')>=0?'var(--bear)':'var(--neutral)';
+  const bg = sc.indexOf('Risk-on')>=0?'rgba(38,194,129,.15)':sc.indexOf('Risk-off')>=0?'rgba(255,92,108,.15)':'rgba(224,178,60,.15)';
+  const maxAbs = Math.max(1, ...r.sectors.map(s=>Math.abs(s.score||0)));
+  let h = '<div class="sec-title">🔄 Rotazione settoriale</div>';
+  h += '<div class="card">';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:6px">'+
+       '<span class="sigbadge" style="color:'+col+';background:'+bg+'">'+sc+'</span>'+
+       '<span style="color:var(--muted);font-size:12px">In testa: <b style="color:var(--bull)">'+r.leaders.join(', ')+'</b> · In coda: <b style="color:var(--bear)">'+r.laggards.join(', ')+'</b></span></div>';
+  h += '<div class="hint">'+r.note+'</div>';
+  h += '<div class="hint" style="margin-top:0">Ordinati per momentum (media rendimenti 1 e 3 mesi). Barra a destra = forza, a sinistra = debolezza. Fonte: ETF settoriali SPDR.</div>';
+  r.sectors.forEach(s=>{
+    const v = s.score||0, pos = v>=0;
+    const w = Math.min(50, Math.abs(v)/maxAbs*50);
+    const fill = pos
+      ? '<div class="rot-fill" style="left:50%;width:'+w+'%;background:var(--bull)"></div>'
+      : '<div class="rot-fill" style="right:50%;width:'+w+'%;background:var(--bear)"></div>';
+    h += '<div class="rot-row">'+
+      '<div class="rot-rank">'+s.rank+'</div>'+
+      '<div class="rot-nm">'+s.name+'<span class="rot-grp grp-'+s.group+'">'+s.group+'</span></div>'+
+      '<div class="rot-track"><div class="rot-mid"></div>'+fill+'</div>'+
+      '<div class="rot-val '+(pos?'up':'down')+'">'+(s.ret_3m==null?'—':pct(s.ret_3m))+'</div>'+
+      '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function marketNewsHTML(){
+  const m = DATA.market||{};
+  const mn = m.news_market||[], rn = m.news_research||[], links = m.research_links||[];
+  if(!mn.length && !rn.length && !links.length) return '';
+  let h = '<div class="sec-title">📰 Notizie & ricerca di mercato</div>';
+  h += '<div class="grid news2">';
+  h += '<div class="card"><h3 class="sec">Notizie di mercato</h3>'+
+       '<div class="hint">Il Sole 24 Ore · Milano Finanza · Investing e altri (via Google News, italiano).</div>'+
+       (mn.length?mn.map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessuna notizia al momento.</div>')+'</div>';
+  h += '<div class="card"><h3 class="sec">Ricerca istituzionale · Goldman Sachs · J.P. Morgan · Fidelity</h3>'+
+       '<div class="hint">Articoli e studi recenti che riportano le loro view di mercato e settoriali.</div>'+
+       (rn.length?rn.map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessun articolo recente trovato.</div>')+'</div>';
+  h += '</div>';
+  if(links.length){
+    h += '<div class="card" style="margin-top:14px"><h3 class="sec">Fonti ufficiali di ricerca</h3>'+
+         '<div class="chips">'+links.map(l=>'<a class="chip-link" href="'+l.url+'" target="_blank" rel="noopener">'+l.name+' ↗</a>').join('')+'</div></div>';
+  }
+  return h;
+}
 
 /* ---------- CHARTS ---------- */
 const GRID='#263043', TICK='#8b98ab';

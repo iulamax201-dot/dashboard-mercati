@@ -2,8 +2,10 @@ name: Aggiorna dati mercati
 
 on:
   schedule:
-    # ogni 30 minuti (orario UTC). GitHub può ritardare i job schedulati.
-    - cron: "*/30 * * * *"
+    # ogni 15 minuti, su minuti "spaiati" (orario UTC) per ridurre i ritardi
+    # dello scheduler di GitHub, che è best-effort e congestionato sugli
+    # orari tondi (:00/:15/:30/:45).
+    - cron: "3,18,33,48 * * * *"
   workflow_dispatch: {}   # avvio manuale dal tab Actions
   push:
     branches: [claude/sei-pronto-0sapn7, main]

@@ -151,6 +151,8 @@ async function load(){
   try{
     const r = await fetch('data.json?_='+Date.now(),{cache:'no-store'});
     DATA = await r.json();
+    try{ const rs = await fetch('summary.json?_='+Date.now(),{cache:'no-store'});
+      if(rs.ok) DATA.summary = await rs.json(); }catch(_){}
     render();
   }catch(e){
     document.getElementById('app').innerHTML =
@@ -239,6 +241,13 @@ function renderDetail(){
     'La linea tratteggiata bianca è il <b>massimo storico</b>.</div>'+
     '<div class="chart-box"><canvas id="c-price"></canvas></div></div>';
 
+  // VOLUMI
+  h += '<div class="card"><h3 class="sec">📊 Volumi degli scambi</h3>'+
+    '<div class="hint">Quante contrattazioni al giorno. Volumi <b>alti</b> confermano la forza di un movimento; '+
+    'un rialzo con volumi in calo è meno affidabile. Le barre <b style="color:var(--bull)">verdi</b> = giornate in rialzo, '+
+    '<b style="color:var(--bear)">rosse</b> = in ribasso.</div>'+
+    '<div class="chart-box sm"><canvas id="c-vol"></canvas></div></div>';
+
   // RSI + MACD affiancati con spiegazione
   h += '<div class="grid two">'+
     '<div class="card"><h3 class="sec">RSI (forza del movimento)</h3>'+
@@ -283,14 +292,11 @@ function renderDetail(){
     '</div></div>';
   h += '</div>';
 
-  // NOTIZIE
+  // NOTIZIE dell'indice (senza link)
   h += '<div class="card"><h3 class="sec">📰 Notizie recenti — '+ix.name+'</h3>'+
-    '<div class="hint">Titoli reali dai principali provider (macro, geopolitica, trimestrali). Aggiornati con i dati.</div>';
+    '<div class="hint">Titoli su questo indice (macro, geopolitica, trimestrali).</div>';
   if(ix.news && ix.news.length){
-    ix.news.forEach(n=>{
-      const tt = n.link?'<a href="'+n.link+'" target="_blank" rel="noopener">'+n.title+'</a>':n.title;
-      h += '<div class="news-item"><div class="tt">'+tt+'</div><div class="src">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';
-    });
+    h += ix.news.map(newsItemHTML).join('');
   } else { h += '<div style="color:var(--muted);font-size:13px">Nessuna notizia recente disponibile.</div>'; }
   h += '</div>';
 
@@ -304,8 +310,8 @@ function retC(l,v){return '<div class="lvl"><div class="n '+cls(v)+'" style="fon
 function lvl(n,t,c){return '<div class="lvl"><div class="n" style="color:'+c+'">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
 
 function newsItemHTML(n){
-  const tt = n.link?'<a href="'+n.link+'" target="_blank" rel="noopener">'+n.title+'</a>':n.title;
-  return '<div class="news-item"><div class="tt">'+tt+'</div><div class="src">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';
+  // niente link: solo titolo + fonte (riassunto)
+  return '<div class="news-item"><div class="tt">'+n.title+'</div><div class="src">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';
 }
 
 function rotationHTML(){
@@ -341,21 +347,33 @@ function rotationHTML(){
 
 function marketNewsHTML(){
   const m = DATA.market||{};
-  const mn = m.news_market||[], rn = m.news_research||[], links = m.research_links||[];
-  if(!mn.length && !rn.length && !links.length) return '';
-  let h = '<div class="sec-title">📰 Notizie & ricerca di mercato</div>';
-  h += '<div class="grid news2">';
-  h += '<div class="card"><h3 class="sec">Notizie di mercato</h3>'+
-       '<div class="hint">Il Sole 24 Ore · Milano Finanza · Investing e altri (via Google News, italiano).</div>'+
-       (mn.length?mn.map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessuna notizia al momento.</div>')+'</div>';
-  h += '<div class="card"><h3 class="sec">Ricerca istituzionale · Goldman Sachs · J.P. Morgan · Fidelity</h3>'+
-       '<div class="hint">Articoli e studi recenti che riportano le loro view di mercato e settoriali.</div>'+
-       (rn.length?rn.map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessun articolo recente trovato.</div>')+'</div>';
-  h += '</div>';
-  if(links.length){
-    h += '<div class="card" style="margin-top:14px"><h3 class="sec">Fonti ufficiali di ricerca</h3>'+
-         '<div class="chips">'+links.map(l=>'<a class="chip-link" href="'+l.url+'" target="_blank" rel="noopener">'+l.name+' ↗</a>').join('')+'</div></div>';
+  const mn = m.news_market||[], rn = m.news_research||[];
+  const sum = (DATA.summary&&DATA.summary.text)?DATA.summary:null;
+  if(!mn.length && !rn.length && !sum) return '';
+  let h = '<div class="sec-title">🗞️ Riassunto notizie principali</div>';
+
+  // sintesi discorsiva (se disponibile)
+  if(sum){
+    h += '<div class="card" style="margin-bottom:14px">'+
+      '<div class="hint" style="margin:0 0 8px">Sintesi aggiornata: '+
+      (sum.updated?new Date(sum.updated).toLocaleString('it-IT'):'')+'</div>'+
+      '<p style="margin:0;font-size:14.5px;line-height:1.6">'+sum.text+'</p>';
+    if(sum.bullets&&sum.bullets.length){
+      h += '<ul class="reasons" style="margin-top:10px">'+
+        sum.bullets.map(b=>'<li><span class="ic neutral-t">•</span><span>'+b+'</span></li>').join('')+'</ul>';
+    }
+    h += '</div>';
   }
+
+  // digest sintetico dei titoli (senza link)
+  h += '<div class="grid news2">';
+  h += '<div class="card"><h3 class="sec">In evidenza sui mercati</h3>'+
+       '<div class="hint">Il Sole 24 Ore · Milano Finanza · Investing e altri.</div>'+
+       (mn.length?mn.slice(0,6).map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessuna notizia al momento.</div>')+'</div>';
+  h += '<div class="card"><h3 class="sec">Dalle view di Goldman Sachs · J.P. Morgan · Fidelity</h3>'+
+       '<div class="hint">Cosa dicono le grandi case d\'investimento (articoli e studi recenti).</div>'+
+       (rn.length?rn.slice(0,6).map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessun articolo recente trovato.</div>')+'</div>';
+  h += '</div>';
   return h;
 }
 
@@ -377,6 +395,13 @@ function buildDetailCharts(ix){
     {label:'Massimo storico',data:athArr,borderColor:'rgba(255,255,255,.55)',borderWidth:1.2,pointRadius:0,borderDash:[6,5]},
   ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:12,font:{size:11},usePointStyle:true}},
     tooltip:{backgroundColor:'#0b0e14'}}})});
+
+  // volumi colorati per direzione della giornata
+  const vcol = s.volume.map((_,i)=> i>0 && s.close[i] < s.close[i-1]
+    ? 'rgba(255,92,108,.55)' : 'rgba(38,194,129,.55)');
+  mk('c-vol',{type:'bar',data:{labels:s.dates,datasets:[{data:s.volume,backgroundColor:vcol,
+    borderWidth:0}]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},
+    y:{grid:{color:GRID},ticks:{color:TICK,callback:v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(0)+'M':v}}}})});
 
   mk('c-rsi',{type:'line',data:{labels:s.dates,datasets:[
     {data:s.rsi,borderColor:'#a78bfa',borderWidth:1.8,pointRadius:0,tension:.1},

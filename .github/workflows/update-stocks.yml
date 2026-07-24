@@ -12,6 +12,7 @@ on:
       - "scripts/fetch_stocks.py"
       - "scripts/stock_analysis.py"
       - "scripts/nasdaq100.py"
+      - "scripts/yahoo_auth.py"
       - ".github/workflows/update-stocks.yml"
 
 permissions:

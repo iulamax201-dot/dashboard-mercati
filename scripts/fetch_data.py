@@ -26,12 +26,17 @@ import analysis  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "data.json")
 
+from yahoo_auth import make_session  # noqa: E402
+
 UA = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/122.0 Safari/537.36"
     )
 }
+
+# sessione autenticata (cookie + crumb) per i fondamentali
+SESSION, CRUMB = make_session()
 
 # Indici e ETF proxy per i fondamentali (gli indici non hanno P/E diretto).
 INDICES = [
@@ -101,12 +106,23 @@ def fetch_chart_stooq(stooq_symbol: str) -> Optional[Dict]:
 
 def fetch_fundamentals(etf: str) -> Dict:
     """P/E, yield e altri dati dall'ETF proxy tramite Yahoo quoteSummary."""
-    url = f"https://query1.finance.yahoo.com/v10/finance/quoteSummary/{etf}"
-    params = {"modules": "summaryDetail,defaultKeyStatistics,price"}
+    modules = "summaryDetail,defaultKeyStatistics,price"
+    r = None
+    for host in ("query1", "query2"):
+        url = f"https://{host}.finance.yahoo.com/v10/finance/quoteSummary/{etf}"
+        params = {"modules": modules}
+        if CRUMB:
+            params["crumb"] = CRUMB
+        try:
+            resp = SESSION.get(url, params=params, timeout=20)
+            if resp.status_code == 200:
+                r = resp
+                break
+        except Exception:  # noqa: BLE001
+            continue
     try:
-        r = requests.get(url, params=params, headers=UA, timeout=20)
-        if r.status_code != 200:
-            return {}
+        if r is None:
+            return {"proxy_etf": etf}
         res = r.json()["quoteSummary"]["result"][0]
         sd = res.get("summaryDetail", {})
         ks = res.get("defaultKeyStatistics", {})

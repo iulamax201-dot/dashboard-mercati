@@ -22,18 +22,13 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import stock_analysis  # noqa: E402
 from nasdaq100 import NASDAQ_100  # noqa: E402
+from yahoo_auth import make_session  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "stocks.json")
 
-UA = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/122.0 Safari/537.36"
-    )
-}
-SESSION = requests.Session()
-SESSION.headers.update(UA)
+# sessione autenticata (cookie + crumb) per gli endpoint dei fondamentali
+SESSION, CRUMB = make_session()
 
 RECO_MAP = {
     "strong_buy": "strong_buy", "buy": "buy", "hold": "hold",
@@ -62,13 +57,17 @@ def get_closes(symbol: str) -> Optional[List[float]]:
 
 
 def get_fundamentals(symbol: str) -> Dict:
-    url = f"https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}"
-    params = {"modules": "financialData,summaryDetail,price,defaultKeyStatistics"}
-    for attempt in range(2):
+    modules = "financialData,summaryDetail,price,defaultKeyStatistics"
+    for attempt in range(3):
+        host = "query1" if attempt == 0 else "query2"
+        url = f"https://{host}.finance.yahoo.com/v10/finance/quoteSummary/{symbol}"
+        params = {"modules": modules}
+        if CRUMB:
+            params["crumb"] = CRUMB
         try:
             r = SESSION.get(url, params=params, timeout=20)
             if r.status_code != 200:
-                time.sleep(1.5)
+                time.sleep(1.2)
                 continue
             res = r.json()["quoteSummary"]["result"][0]
             fd = res.get("financialData", {})

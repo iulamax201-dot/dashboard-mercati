@@ -7,9 +7,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --paper:#f6f3ec; --panel:#fffdf8; --ink:#1c1b19; --muted:#6d675c;
-    --rule:#dcd6c8; --rule2:#ebe6da; --up:#17663b; --down:#a12a1d;
-    --navy:#173251; --gold:#8a6a1e; --purple:#5b4a7a;
+    --paper:#151412; --panel:#1e1c18; --ink:#ece6d9; --muted:#9a9284;
+    --rule:#34312a; --rule2:#26241f; --up:#4bb877; --down:#e26a5f;
+    --navy:#7ea6d0; --gold:#d3a648; --purple:#a897cf;
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
@@ -40,7 +40,7 @@
   .lead{grid-template-columns:1.6fr 1fr;align-items:start;margin-top:14px}
   @media(max-width:760px){.lead{grid-template-columns:1fr}}
   .phase-word{font-family:Georgia,serif;font-size:40px;font-weight:700;line-height:1.05;margin:2px 0 6px}
-  .phase-desc{font-size:14.5px;color:#3a372f;max-width:44ch}
+  .phase-desc{font-size:14.5px;color:#c9c2b4;max-width:44ch}
   .phase-tag{font-size:12px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)}
   /* meters */
   .meter{margin:2px 0 14px}
@@ -97,7 +97,7 @@
   .ob{padding:10px 0;border-top:1px solid var(--rule2)}
   .ob .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:3px}
   .ob.confirm .lab{color:var(--up)} .ob.change .lab{color:var(--gold)}
-  .ob p{margin:0;font-size:14px;color:#33302a}
+  .ob p{margin:0;font-size:14px;color:#c4bdaf}
   .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:12px;border:1px solid var(--rule)}
   .lvl{padding:10px;text-align:center;border-right:1px solid var(--rule)}
   .lvl:last-child{border-right:none}
@@ -117,7 +117,7 @@
   .rot .grp{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .rot .barcell{width:44%}
   .rot .track{position:relative;height:14px;background:var(--rule2)}
-  .rot .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#c9c2b2}
+  .rot .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#4b473e}
   .rot .fill{position:absolute;top:2px;bottom:2px}
   .rot .val{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:64px}
   .signal-line{font-size:13px;margin-bottom:8px}
@@ -128,21 +128,20 @@
   .news .it:last-child{border-bottom:none}
   .news .it .h{font-family:Georgia,serif;font-size:15px;line-height:1.4;color:var(--ink)}
   .news .it .m{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
-  .summary-text{font-family:Georgia,serif;font-size:16px;line-height:1.7;color:#2b2925}
+  .summary-text{font-family:Georgia,serif;font-size:16px;line-height:1.7;color:#d8d1c4}
   .bullets{list-style:none;margin:12px 0 0;padding:0}
-  .bullets li{padding:5px 0 5px 16px;position:relative;font-size:14px;color:#33302a}
+  .bullets li{padding:5px 0 5px 16px;position:relative;font-size:14px;color:#c4bdaf}
   .bullets li:before{content:"—";position:absolute;left:0;color:var(--muted)}
   .disclaimer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);color:var(--muted);font-size:11.5px;line-height:1.6}
   .loading{text-align:center;padding:70px;color:var(--muted)}
   /* ---------- animazioni e movimenti fluidi ---------- */
   html{scroll-behavior:smooth}
   .quote,.tab,a{transition:transform .3s cubic-bezier(.2,.75,.2,1),border-color .3s ease,color .25s ease,box-shadow .3s ease}
-  .quote:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(28,27,25,.09)}
+  .quote:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.45)}
   .tab:hover{color:var(--ink)}
   .news .it .h{transition:color .25s ease}
   .news .it:hover .h{color:var(--navy)}
   .rot tr .fill{transition:width .9s cubic-bezier(.22,.8,.24,1)}
-  .masthead h1{background:linear-gradient(90deg,var(--ink) 0%,var(--ink) 100%);}
   .meter .bar{overflow:hidden}
   .meter .bar span{transition:width 1s cubic-bezier(.22,.85,.25,1)}
   @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
@@ -153,7 +152,6 @@
   .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--up);margin-right:6px;position:relative;vertical-align:middle}
   .live:after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--up);animation:pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite}
   @keyframes pulse{0%{transform:scale(1);opacity:.5}70%{transform:scale(3);opacity:0}100%{opacity:0}}
-  .masthead h1{overflow:hidden}
   @media (prefers-reduced-motion: reduce){
     *,*:before,*:after{animation:none!important;transition:none!important}
     html{scroll-behavior:auto}
@@ -188,7 +186,7 @@ const FMT = new Intl.NumberFormat('it-IT',{maximumFractionDigits:2});
 const fmt = n => (n==null?'—':FMT.format(n));
 const pct = n => (n==null?'—':(n>=0?'+':'')+FMT.format(n)+'%');
 const cls = n => n==null?'flat':(n>0?'up':n<0?'down':'flat');
-const UP='#17663b', DOWN='#a12a1d', GOLD='#8a6a1e';
+const UP='#4bb877', DOWN='#e26a5f', GOLD='#d3a648';
 let CURRENT=0, DATA=null, LAST_STAMP=null, STARTED=false;
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -434,11 +432,11 @@ function marketNewsHTML(){
 }
 
 /* ---------- CHARTS (tema chiaro, sobrio) ---------- */
-const GRID='#e6e0d3', TICK='#8a8478', INK='#1c1b19';
+const GRID='#2f2c25', TICK='#8f887a', INK='#ece6d9';
 function baseOpts(extra){return Object.assign({responsive:true,maintainAspectRatio:false,
   interaction:{mode:'index',intersect:false},
-  plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c1b19',titleColor:'#f6f3ec',
-    bodyColor:'#f6f3ec',borderColor:'#1c1b19',borderWidth:0,padding:8}},
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#0e0d0b',titleColor:'#ece6d9',
+    bodyColor:'#ece6d9',borderColor:'#34312a',borderWidth:1,padding:8}},
   scales:{x:{grid:{color:GRID},ticks:{color:TICK,maxTicksLimit:7,autoSkip:true,font:{size:11}}},
           y:{grid:{color:GRID},ticks:{color:TICK,font:{size:11}}}}},extra||{});}
 
@@ -446,30 +444,30 @@ function buildDetailCharts(ix){
   const s=ix.series;
   const athArr = s.dates.map(()=>ix.ath);
   mk('c-price',{type:'line',data:{labels:s.dates,datasets:[
-    {label:'Prezzo',data:s.close,borderColor:'#1c1b19',borderWidth:1.7,pointRadius:0,fill:true,
-      backgroundColor:'rgba(23,50,81,.05)',tension:.12},
+    {label:'Prezzo',data:s.close,borderColor:'#ece6d9',borderWidth:1.7,pointRadius:0,fill:true,
+      backgroundColor:'rgba(126,166,208,.10)',tension:.12},
     {label:'Media 50g',data:s.sma50,borderColor:GOLD,borderWidth:1.2,pointRadius:0,tension:.1},
-    {label:'Media 200g',data:s.sma200,borderColor:'#6a7f96',borderWidth:1.2,pointRadius:0,tension:.1},
-    {label:'Massimo storico',data:athArr,borderColor:'rgba(28,27,25,.45)',borderWidth:1,pointRadius:0,borderDash:[5,4]},
+    {label:'Media 200g',data:s.sma200,borderColor:'#7ea6d0',borderWidth:1.2,pointRadius:0,tension:.1},
+    {label:'Massimo storico',data:athArr,borderColor:'rgba(236,230,217,.42)',borderWidth:1,pointRadius:0,borderDash:[5,4]},
   ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:14,font:{size:11},usePointStyle:true}},
-    tooltip:{backgroundColor:'#1c1b19'}}})});
+    tooltip:{backgroundColor:'#0e0d0b'}}})});
 
-  const vcol = s.volume.map((_,i)=> i>0 && s.close[i] < s.close[i-1] ? 'rgba(161,42,29,.42)' : 'rgba(23,102,59,.42)');
+  const vcol = s.volume.map((_,i)=> i>0 && s.close[i] < s.close[i-1] ? 'rgba(226,106,95,.45)' : 'rgba(75,184,119,.45)');
   mk('c-vol',{type:'bar',data:{labels:s.dates,datasets:[{data:s.volume,backgroundColor:vcol,borderWidth:0}]},
     options:baseOpts({scales:{x:{display:false,grid:{display:false}},
     y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10},callback:v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(0)+'M':v}}}})});
 
   mk('c-rsi',{type:'line',data:{labels:s.dates,datasets:[
-    {data:s.rsi,borderColor:'#5b4a7a',borderWidth:1.5,pointRadius:0,tension:.1},
-    {data:s.dates.map(()=>70),borderColor:'rgba(161,42,29,.45)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
-    {data:s.dates.map(()=>30),borderColor:'rgba(23,102,59,.45)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
+    {data:s.rsi,borderColor:'#a897cf',borderWidth:1.5,pointRadius:0,tension:.1},
+    {data:s.dates.map(()=>70),borderColor:'rgba(226,106,95,.5)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
+    {data:s.dates.map(()=>30),borderColor:'rgba(75,184,119,.5)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
   ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},
     y:{min:0,max:100,grid:{color:GRID},ticks:{color:TICK,stepSize:25,font:{size:10}}}}})});
 
-  const hcol=s.macd_hist.map(v=>v==null?'#ccc':v>=0?'rgba(23,102,59,.5)':'rgba(161,42,29,.5)');
+  const hcol=s.macd_hist.map(v=>v==null?'#555':v>=0?'rgba(75,184,119,.5)':'rgba(226,106,95,.5)');
   mk('c-macd',{data:{labels:s.dates,datasets:[
     {type:'bar',data:s.macd_hist,backgroundColor:hcol},
-    {type:'line',data:s.macd,borderColor:'#173251',borderWidth:1.3,pointRadius:0,tension:.1},
+    {type:'line',data:s.macd,borderColor:'#7ea6d0',borderWidth:1.3,pointRadius:0,tension:.1},
     {type:'line',data:s.macd_signal,borderColor:GOLD,borderWidth:1.3,pointRadius:0,tension:.1},
   ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10}}}}})});
 }

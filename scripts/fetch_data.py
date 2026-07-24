@@ -146,6 +146,53 @@ def fetch_fundamentals(etf: str) -> Dict:
         return {"proxy_etf": etf}
 
 
+def fetch_ath(symbol: str) -> Optional[float]:
+    """Massimo storico (all-time high) da tutta la storia disponibile."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    params = {"range": "max", "interval": "1wk"}
+    try:
+        r = SESSION.get(url, params=params, timeout=25)
+        if r.status_code != 200:
+            return None
+        res = r.json()["chart"]["result"][0]
+        q = res["indicators"]["quote"][0]
+        highs = [h for h in (q.get("high") or []) if h is not None]
+        closes = [c for c in (q.get("close") or []) if c is not None]
+        vals = highs or closes
+        # includi anche il massimo registrato nei metadati, se presente
+        meta_hi = res.get("meta", {}).get("fiftyTwoWeekHigh")
+        if vals:
+            m = max(vals)
+            return max(m, meta_hi) if meta_hi else m
+    except Exception as e:  # noqa: BLE001
+        print(f"  ATH {symbol} non disponibile: {e}")
+    return None
+
+
+def fetch_news(symbol: str, count: int = 5) -> List[Dict]:
+    """Notizie recenti collegate all'indice."""
+    url = "https://query1.finance.yahoo.com/v1/finance/search"
+    params = {"q": symbol, "newsCount": count, "quotesCount": 0}
+    try:
+        r = SESSION.get(url, params=params, timeout=15)
+        if r.status_code != 200:
+            return []
+        out = []
+        for it in r.json().get("news", [])[:count]:
+            ts = it.get("providerPublishTime")
+            out.append({
+                "title": it.get("title", "")[:180],
+                "publisher": it.get("publisher", ""),
+                "link": it.get("link", ""),
+                "date": dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
+                if ts else None,
+            })
+        return out
+    except Exception as e:  # noqa: BLE001
+        print(f"  Notizie {symbol} non disponibili: {e}")
+        return []
+
+
 def build() -> Dict:
     indices_out: List[Dict] = []
     source = "Yahoo Finance"
@@ -160,12 +207,14 @@ def build() -> Dict:
         if chart is None:
             raise RuntimeError(f"Impossibile scaricare dati per {spec['name']}")
         fund = fetch_fundamentals(spec["etf"])
+        ath = fetch_ath(spec["symbol"])
+        news = fetch_news(spec["symbol"])
         indices_out.append(
             analysis.build_index_analysis(
                 spec["name"], spec["symbol"],
                 chart["dates"], chart["open"], chart["high"],
                 chart["low"], chart["close"], chart["volume"],
-                fundamentals=fund,
+                fundamentals=fund, ath=ath, news=news,
             )
         )
         time.sleep(0.5)

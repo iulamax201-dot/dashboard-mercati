@@ -24,6 +24,8 @@ def build_index_analysis(
     closes: List[float],
     volumes: List[float],
     fundamentals: Optional[Dict] = None,
+    ath: Optional[float] = None,
+    news: Optional[List[Dict]] = None,
 ) -> Dict:
     sma50 = ind.sma(closes, 50)
     sma200 = ind.sma(closes, 200)
@@ -163,6 +165,18 @@ def build_index_analysis(
     if not risk_reasons:
         risk_reasons.append("Nessun segnale di eccesso rilevante al momento")
 
+    # ---------- MASSIMO STORICO (ATH) ----------
+    # ath passato dal fetcher (range max); fallback al massimo dello storico noto
+    ath_val = ath if ath else max(closes)
+    if price > ath_val:
+        ath_val = price
+    pct_from_ath = (price / ath_val - 1) * 100 if ath_val else 0.0
+    at_ath = pct_from_ath >= -0.5  # entro lo 0,5% dal record
+
+    # ---------- OUTLOOK: cosa conferma / cambia il trend ----------
+    outlook = _build_outlook(verdict, price, v_sma50, v_sma200, v_rsi,
+                             high_52, low_52)
+
     # storico compatto per i grafici (max ~260 barre)
     hist_len = min(len(closes), 260)
     s = len(closes) - hist_len
@@ -179,6 +193,11 @@ def build_index_analysis(
         "correction_risk": round(risk, 0),
         "correction_risk_label": risk_label,
         "correction_reasons": risk_reasons,
+        "ath": round(ath_val, 2),
+        "pct_from_ath": round(pct_from_ath, 2),
+        "at_ath": at_ath,
+        "outlook": outlook,
+        "news": news or [],
         "technical": {
             "rsi": _r(v_rsi),
             "macd": _r(v_macd, 3),
@@ -211,6 +230,50 @@ def build_index_analysis(
             "macd_signal": [_r(x, 3) for x in signal_line[s:]],
             "macd_hist": [_r(x, 3) for x in hist[s:]],
         },
+    }
+
+
+def _build_outlook(verdict, price, sma50, sma200, rsi, high_52, low_52) -> Dict:
+    """Genera l'outlook di trend in italiano: livelli chiave e cosa
+    confermerebbe o cambierebbe la tendenza. Basato su prezzo e medie mobili."""
+    def f(x):
+        return None if x is None else round(x, 2)
+
+    confirm, change, note = "", "", ""
+    if verdict == "Bullish":
+        confirm = ("Trend rialzista intatto finché il prezzo resta sopra la "
+                   "media a 200 giorni; la conferma arriva superando i massimi "
+                   "recenti.")
+        change = ("Primo segnale di debolezza sotto la media a 50 giorni; "
+                  "vera inversione se cede la media a 200 giorni.")
+    elif verdict == "Bearish":
+        confirm = ("Trend debole/ribassista finché resta sotto la media a "
+                   "200 giorni e non recupera i minimi.")
+        change = ("Possibile ripresa se riconquista la media a 50 e poi la "
+                  "media a 200 giorni.")
+    else:
+        confirm = ("Fase laterale: il mercato si muove tra il supporto della "
+                   "media a 200 giorni e la resistenza dei massimi recenti.")
+        change = ("La direzione si definisce alla rottura netta di uno dei due "
+                  "livelli (sopra i massimi = rialzo, sotto la media 200 = ribasso).")
+
+    if rsi is not None:
+        if rsi >= 70:
+            note = ("RSI ipercomprato: possibile pausa o correzione di breve, "
+                    "anche in un trend solido.")
+        elif rsi <= 30:
+            note = ("RSI ipervenduto: possibile rimbalzo tecnico di breve.")
+
+    return {
+        "support": f(sma200),
+        "support_label": "Media mobile 200 giorni (supporto di lungo)",
+        "resistance": f(high_52),
+        "resistance_label": "Massimo 52 settimane (resistenza)",
+        "pivot": f(sma50),
+        "pivot_label": "Media mobile 50 giorni (spartiacque di breve)",
+        "confirm": confirm,
+        "change": change,
+        "note": note,
     }
 
 

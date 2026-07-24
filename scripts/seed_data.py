@@ -69,10 +69,19 @@ def main():
             "beta": 1.0,
             "note": "valori dimostrativi",
         }
+        ath = max(c) * random.uniform(1.0, 1.08)  # record poco sopra
+        news = [
+            {"title": f"{spec['name']}: sintesi dimostrativa dei mercati",
+             "publisher": "Demo", "link": "",
+             "date": dt.date.today().isoformat() + " 09:00"},
+            {"title": "Fattori macro e trimestrali in focus (esempio)",
+             "publisher": "Demo", "link": "",
+             "date": dt.date.today().isoformat() + " 08:30"},
+        ]
         indices_out.append(
             analysis.build_index_analysis(
                 spec["name"], spec["symbol"], dates, o, h, l, c, v,
-                fundamentals=fund,
+                fundamentals=fund, ath=ath, news=news,
             )
         )
 

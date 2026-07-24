@@ -52,21 +52,19 @@ dimostrativi** (chiaramente etichettati come "demo").
 - Bande di Bollinger (20·2σ)
 - Range 52 settimane, drawdown dai massimi, rendimenti 1S/1M/3M/6M/1A
 
-**Analisi fondamentale** (via ETF proxy SPY / DIA / QQQ, perché gli indici
-non hanno un P/E diretto)
-- P/E trailing, dividend yield, beta e commento sulla valutazione
+**Massimi storici (ATH)**
+- Distanza percentuale dal massimo storico, evidenziata su ogni indice
+- Barra visiva min 52 settimane → ATH con posizione del prezzo attuale
+- Linea del massimo storico sul grafico prezzo
 
-**Titoli Nasdaq 100** (sezione dedicata, tabella ordinabile/filtrabile)
-- Quotazioni e mini-grafico per ~100 titoli
-- Segnale operativo **Compra / Mantieni / Vendi** (analisi tecnica)
-- **Fair value** = target di consenso analisti (Yahoo Finance) + % di upside
-- **Sentiment** (tecnico + consenso analisti) e P/E, capitalizzazione
-- **Notizie recenti** per ogni titolo (best-effort)
-- La composizione dell'indice è in `scripts/nasdaq100.py`, facilmente aggiornabile
+**Outlook & notizie**
+- Cosa **conferma** e cosa **cambierebbe** il trend (livelli chiave: SMA200,
+  SMA50, massimi 52 settimane)
+- **Notizie recenti** reali per ogni indice (macro, geopolitica, trimestrali)
+  da Yahoo Finance, aggiornate insieme ai dati
 
-> Nota: «fair value» è il target di consenso degli analisti, non una
-> valutazione intrinseca (DCF). Il «sentiment» deriva da tecnica + consenso
-> analisti, non da analisi NLP di news/social. Tutto a scopo informativo.
+> Nota: outlook e verdetti sono generati da indicatori tecnici e livelli di
+> prezzo; le notizie sono headline pubbliche. Non sono previsioni.
 
 **Verdetto e rischio**
 - Punteggio 0–100 → **Bullish / Neutrale / Bearish** con motivazioni esplicite
@@ -93,16 +91,12 @@ python -m http.server -d docs 8000   # → http://localhost:8000
 |------|-------|
 | `docs/index.html` | Interfaccia dashboard (Chart.js) |
 | `docs/data.json` | Dati e analisi dei 3 indici |
-| `docs/stocks.json` | Dati e analisi dei ~100 titoli Nasdaq |
-| `scripts/fetch_data.py` | Fetcher indici (Yahoo/Stooq) |
-| `scripts/fetch_stocks.py` | Fetcher titoli Nasdaq 100 |
-| `scripts/nasdaq100.py` | Lista costituenti Nasdaq 100 |
-| `scripts/stock_analysis.py` | Segnali/sentiment/fair value per titolo |
-| `scripts/seed_data.py`, `seed_stocks.py` | Generatori dati demo offline |
-| `scripts/analysis.py` | Verdetto e rischio correzione (indici) |
+| `scripts/fetch_data.py` | Fetcher indici, ATH e notizie (Yahoo/Stooq) |
+| `scripts/seed_data.py` | Generatore dati demo offline |
+| `scripts/analysis.py` | Verdetto, rischio correzione, ATH, outlook |
 | `scripts/indicators.py` | Motore indicatori (RSI, MACD, SMA, …) |
-| `.github/workflows/update-data.yml` | Aggiornamento indici (ogni 15 min) |
-| `.github/workflows/update-stocks.yml` | Aggiornamento titoli (ogni 30 min) |
+| `scripts/yahoo_auth.py` | Sessione autenticata Yahoo (cookie + crumb) |
+| `.github/workflows/update-data.yml` | Aggiornamento automatico indici |
 
 ## ⚠️ Disclaimer
 

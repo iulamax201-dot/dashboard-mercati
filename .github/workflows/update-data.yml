@@ -6,7 +6,7 @@ on:
     - cron: "*/30 * * * *"
   workflow_dispatch: {}   # avvio manuale dal tab Actions
   push:
-    branches: [main]
+    branches: [claude/sei-pronto-0sapn7, main]
     paths:
       - "scripts/**"
       - ".github/workflows/update-data.yml"

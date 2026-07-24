@@ -41,11 +41,17 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin ${GITHUB_REF_NAME} || true
-          if ! git diff --quiet -- docs/stocks.json; then
-            git add docs/stocks.json
-            git commit -m "chore: aggiornamento titoli Nasdaq 100 [skip ci]"
-            git push
-          else
+          if git diff --quiet -- docs/stocks.json; then
             echo "Nessuna variazione nei titoli."
+            exit 0
           fi
+          git add docs/stocks.json
+          git commit -m "chore: aggiornamento titoli Nasdaq 100 [skip ci]"
+          # commit PRIMA di rebasare; poi integra eventuali push concorrenti
+          for i in 1 2 3 4 5; do
+            if git pull --rebase origin "$GITHUB_REF_NAME" && git push; then
+              echo "push ok"; exit 0
+            fi
+            echo "collisione, retry $i"; sleep 4
+          done
+          echo "push fallito dopo i retry"; exit 1

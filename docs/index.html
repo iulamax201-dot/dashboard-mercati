@@ -7,136 +7,154 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0b0e14; --panel:#141924; --panel2:#1b2230; --line:#263043;
-    --txt:#e6edf3; --muted:#8b98ab; --bull:#26c281; --bear:#ff5c6c;
-    --neutral:#e0b23c; --accent:#4a9eff; --warn:#ff9f43;
+    --paper:#f6f3ec; --panel:#fffdf8; --ink:#1c1b19; --muted:#6d675c;
+    --rule:#dcd6c8; --rule2:#ebe6da; --up:#17663b; --down:#a12a1d;
+    --navy:#173251; --gold:#8a6a1e; --purple:#5b4a7a;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;line-height:1.5}
-  a{color:var(--accent)}
-  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
-  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;margin-bottom:8px}
-  .title h1{font-size:22px;margin:0;font-weight:700}
-  .title p{margin:2px 0 0;color:var(--muted);font-size:13px}
-  .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
-  .badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
-  .badge.demo{background:rgba(255,159,67,.15);color:var(--warn);border:1px solid rgba(255,159,67,.35)}
-  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--bull);box-shadow:0 0 8px var(--bull)}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
-  .grid{display:grid;gap:14px}
-  .hero{grid-template-columns:1.5fr 1fr 1fr;margin:14px 0}
-  @media(max-width:820px){.hero{grid-template-columns:1fr}}
-  .phase-big{font-size:32px;font-weight:800;margin:6px 0 2px}
-  .phase-desc{color:var(--muted);font-size:14px}
-  .gauge-wrap{display:flex;align-items:center;gap:14px}
-  .gauge{position:relative;width:92px;height:92px;flex:0 0 auto}
-  .gauge canvas{width:92px;height:92px}
-  .gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:800;font-size:19px}
-  .gauge .val small{font-size:10px;color:var(--muted);font-weight:600}
-  .kpi-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
-  .cards{grid-template-columns:repeat(3,1fr)}
-  @media(max-width:820px){.cards{grid-template-columns:1fr}}
-  .idx-card{cursor:pointer;transition:.15s;position:relative;overflow:hidden}
-  .idx-card:hover{border-color:var(--accent)}
-  .idx-card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-  .idx-card .nm{font-weight:700;font-size:15px}
-  .idx-card .sym{color:var(--muted);font-size:11px}
-  .idx-card .px{font-size:26px;font-weight:800;margin-top:6px}
-  .chg{font-size:14px;font-weight:700}
-  .up{color:var(--bull)} .down{color:var(--bear)} .flat{color:var(--muted)}
-  .vbadge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;margin-top:8px}
-  .v-Bullish{background:rgba(38,194,129,.15);color:var(--bull)}
-  .v-Bearish{background:rgba(255,92,108,.15);color:var(--bear)}
-  .v-Neutrale{background:rgba(224,178,60,.15);color:var(--neutral)}
-  .card-ath{margin-top:10px;font-size:12px;color:var(--muted)}
-  .card-ath b{font-size:15px}
-  .spark{position:absolute;right:10px;top:12px;width:96px;height:36px;opacity:.9}
-  .tabs{display:flex;gap:8px;margin:18px 0 12px;flex-wrap:wrap}
-  .tab{padding:8px 16px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
-  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .detail{grid-template-columns:1fr;gap:14px}
-  /* pannello ATH */
-  .ath-panel{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center}
-  @media(max-width:700px){.ath-panel{grid-template-columns:1fr;gap:12px}}
-  .ath-big{font-size:34px;font-weight:800;line-height:1}
-  .ath-sub{color:var(--muted);font-size:12px;margin-top:4px}
-  .ath-track{position:relative;height:34px}
-  .ath-bar{position:absolute;top:13px;left:0;right:0;height:8px;border-radius:6px;
-    background:linear-gradient(90deg,var(--bear),var(--neutral),var(--bull))}
-  .ath-cur{position:absolute;top:6px;width:3px;height:22px;background:#fff;border-radius:2px}
-  .ath-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:22px}
-  .charts{grid-template-columns:1fr}
-  .chart-box{height:340px;position:relative}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .serif{font-family:Georgia,"Times New Roman",'Iowan Old Style',serif}
+  a{color:var(--navy)}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px 64px}
+  .tnum{font-variant-numeric:tabular-nums}
+  /* masthead */
+  .masthead{border-bottom:3px double var(--ink);padding:22px 0 12px;margin-bottom:2px}
+  .masthead .kicker{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .masthead h1{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:34px;
+    letter-spacing:.01em;margin:2px 0 4px}
+  .dateline{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:baseline;
+    font-size:12.5px;color:var(--muted)}
+  .dateline .demo{color:var(--down);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+  /* section headers */
+  .sec-h{font-family:Georgia,serif;font-weight:700;font-size:20px;margin:30px 0 2px;
+    padding-bottom:6px;border-bottom:1px solid var(--ink)}
+  .sub-h{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:0 0 10px}
+  .note{font-size:12.5px;color:var(--muted);margin:4px 0 12px;line-height:1.5}
+  /* panels */
+  .panel{background:var(--panel);border:1px solid var(--rule);padding:16px 18px;margin-top:14px}
+  .grid{display:grid;gap:16px}
+  .lead{grid-template-columns:1.6fr 1fr;align-items:start;margin-top:14px}
+  @media(max-width:760px){.lead{grid-template-columns:1fr}}
+  .phase-word{font-family:Georgia,serif;font-size:40px;font-weight:700;line-height:1.05;margin:2px 0 6px}
+  .phase-desc{font-size:14.5px;color:#3a372f;max-width:44ch}
+  .phase-tag{font-size:12px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)}
+  /* meters */
+  .meter{margin:2px 0 14px}
+  .meter .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted)}
+  .meter .top b{font-family:Georgia,serif;font-size:22px;color:var(--ink)}
+  .meter .bar{height:6px;background:var(--rule2);margin-top:5px;position:relative}
+  .meter .bar span{position:absolute;left:0;top:0;bottom:0}
+  .meter small{display:block;font-size:11px;color:var(--muted);margin-top:5px}
+  /* index quotes */
+  .quotes{grid-template-columns:repeat(3,1fr);margin-top:16px}
+  @media(max-width:760px){.quotes{grid-template-columns:1fr}}
+  .quote{border:1px solid var(--rule);background:var(--panel);padding:14px 16px;cursor:pointer;position:relative}
+  .quote:hover{border-color:var(--muted)}
+  .quote.active{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+  .quote .nm{font-family:Georgia,serif;font-weight:700;font-size:16px}
+  .quote .sym{font-size:11px;color:var(--muted);letter-spacing:.05em}
+  .quote .px{font-family:Georgia,serif;font-size:27px;font-weight:700;margin-top:8px}
+  .quote .chg{font-size:13.5px;font-weight:600;margin-top:1px}
+  .quote .spark{position:absolute;right:14px;top:16px;width:88px;height:30px}
+  .quote .ath{font-size:12px;color:var(--muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--rule2)}
+  .quote .ath b{color:var(--ink)}
+  .up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--muted)}
+  .verdict{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:1px 0;margin-top:8px;border-bottom:2px solid}
+  .vd-Bullish{color:var(--up);border-color:var(--up)}
+  .vd-Bearish{color:var(--down);border-color:var(--down)}
+  .vd-Neutrale{color:var(--gold);border-color:var(--gold)}
+  /* tabs */
+  .tabs{display:flex;gap:26px;border-bottom:1px solid var(--rule);margin:26px 0 0}
+  .tab{padding:9px 0;font-family:Georgia,serif;font-size:16px;color:var(--muted);cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--ink);border-color:var(--ink);font-weight:700}
+  /* ATH block */
+  .ath-panel{display:grid;grid-template-columns:auto 1fr auto;gap:26px;align-items:center}
+  @media(max-width:680px){.ath-panel{grid-template-columns:1fr;gap:14px}}
+  .ath-big{font-family:Georgia,serif;font-size:38px;font-weight:700;line-height:1}
+  .ath-sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .ath-scale{position:relative;height:30px}
+  .ath-scale .track{position:absolute;left:0;right:0;top:12px;height:2px;background:var(--ink)}
+  .ath-scale .cur{position:absolute;top:5px;width:2px;height:16px;background:var(--down)}
+  .ath-scale .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:20px}
+  /* charts */
+  .chart-box{height:330px;position:relative}
   .chart-box.sm{height:150px}
-  .two{grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:820px){.two{grid-template-columns:1fr}}
-  h3.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 6px}
-  .hint{font-size:12px;color:var(--muted);margin:4px 0 12px}
-  .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
-  .row:last-child{border-bottom:none}
-  .row .k{color:var(--muted)}
-  .row .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .two{grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  /* tables / rows */
+  .dl .r{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--rule2);font-size:14px}
+  .dl .r:last-child{border-bottom:none}
+  .dl .r .k{color:var(--muted)}
+  .dl .r .v{font-weight:600}
   .panels{grid-template-columns:1.1fr 1fr}
-  @media(max-width:820px){.panels{grid-template-columns:1fr}}
-  .out-block{padding:10px 12px;border-radius:10px;background:var(--panel2);margin-bottom:10px}
-  .out-block .lab{font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:4px}
-  .out-confirm .lab{color:var(--bull)} .out-change .lab{color:var(--warn)}
-  .out-block p{margin:0;font-size:13.5px}
-  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
-  .lvl{background:var(--panel2);border-radius:8px;padding:8px;text-align:center}
-  .lvl .n{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
-  .lvl .t{font-size:10px;color:var(--muted);margin-top:2px}
-  .news-item{display:block;padding:9px 0;border-bottom:1px solid var(--line)}
-  .news-item:last-child{border-bottom:none}
-  .news-item .tt{font-size:13.5px;font-weight:600}
-  .news-item .src{color:var(--muted);font-size:11px;margin-top:2px}
-  .reasons{list-style:none;margin:8px 0 0;padding:0}
-  .reasons li{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px}
-  .reasons li .ic{flex:0 0 auto;width:16px;text-align:center}
-  .bull-t{color:var(--bull)} .bear-t{color:var(--bear)} .warn-t{color:var(--warn)} .neutral-t{color:var(--muted)}
-  .pill{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--panel2);color:var(--muted)}
-  .disclaimer{margin-top:26px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
-  .loading{text-align:center;padding:60px;color:var(--muted)}
-  .sec-title{font-size:18px;font-weight:700;margin:26px 0 4px}
-  .sigbadge{display:inline-block;padding:4px 12px;border-radius:20px;font-weight:800;font-size:13px}
-  .rot-row{display:grid;grid-template-columns:24px 1.4fr 1fr 88px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
-  .rot-row:last-child{border-bottom:none}
-  .rot-rank{color:var(--muted);font-weight:700;text-align:center;font-size:12px}
-  .rot-nm{font-weight:600;font-size:13.5px}
-  .rot-grp{font-size:10px;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
-  .grp-Ciclico{background:rgba(74,158,255,.15);color:var(--accent)}
-  .grp-Difensivo{background:rgba(224,178,60,.15);color:var(--neutral)}
-  .rot-track{position:relative;height:16px;background:var(--panel2);border-radius:5px}
-  .rot-mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
-  .rot-fill{position:absolute;top:2px;bottom:2px;border-radius:4px}
-  .rot-val{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .chip-link{font-size:12px;padding:5px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);text-decoration:none}
-  .chip-link:hover{border-color:var(--accent)}
-  .news2{grid-template-columns:1fr 1fr}
-  @media(max-width:820px){.news2{grid-template-columns:1fr}}
+  @media(max-width:760px){.panels{grid-template-columns:1fr}}
+  .ob{padding:10px 0;border-top:1px solid var(--rule2)}
+  .ob .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:3px}
+  .ob.confirm .lab{color:var(--up)} .ob.change .lab{color:var(--gold)}
+  .ob p{margin:0;font-size:14px;color:#33302a}
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:12px;border:1px solid var(--rule)}
+  .lvl{padding:10px;text-align:center;border-right:1px solid var(--rule)}
+  .lvl:last-child{border-right:none}
+  .lvl .n{font-family:Georgia,serif;font-weight:700;font-size:16px}
+  .lvl .t{font-size:10.5px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+  .rets{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--rule);margin-top:12px}
+  .rets .c{padding:8px 2px;text-align:center;border-right:1px solid var(--rule)}
+  .rets .c:last-child{border-right:none}
+  .rets .c .l{font-size:10px;color:var(--muted);text-transform:uppercase}
+  .rets .c .n{font-weight:700;font-size:13px;margin-top:2px}
+  /* rotation */
+  .rot{width:100%;border-collapse:collapse;font-size:14px}
+  .rot td{padding:7px 8px;border-bottom:1px solid var(--rule2);vertical-align:middle}
+  .rot tr:last-child td{border-bottom:none}
+  .rot .rk{color:var(--muted);width:24px;text-align:right;font-variant-numeric:tabular-nums}
+  .rot .nm{font-weight:600}
+  .rot .grp{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .rot .barcell{width:44%}
+  .rot .track{position:relative;height:14px;background:var(--rule2)}
+  .rot .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#c9c2b2}
+  .rot .fill{position:absolute;top:2px;bottom:2px}
+  .rot .val{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:64px}
+  .signal-line{font-size:13px;margin-bottom:8px}
+  .signal-tag{font-family:Georgia,serif;font-weight:700;font-size:15px;border-bottom:2px solid;padding-bottom:1px}
+  /* news */
+  .news{margin-top:2px}
+  .news .it{padding:10px 0;border-bottom:1px solid var(--rule2)}
+  .news .it:last-child{border-bottom:none}
+  .news .it .h{font-family:Georgia,serif;font-size:15px;line-height:1.4;color:var(--ink)}
+  .news .it .m{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+  .summary-text{font-family:Georgia,serif;font-size:16px;line-height:1.7;color:#2b2925}
+  .bullets{list-style:none;margin:12px 0 0;padding:0}
+  .bullets li{padding:5px 0 5px 16px;position:relative;font-size:14px;color:#33302a}
+  .bullets li:before{content:"—";position:absolute;left:0;color:var(--muted)}
+  .disclaimer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);color:var(--muted);font-size:11.5px;line-height:1.6}
+  .loading{text-align:center;padding:70px;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <div class="title">
-      <h1>📊 Dashboard Mercati</h1>
-      <p>S&amp;P 500 · Dow Jones · Nasdaq — tendenza, massimi storici e outlook</p>
+  <div class="masthead">
+    <div class="kicker">Osservatorio dei mercati azionari</div>
+    <h1>Dashboard Mercati</h1>
+    <div class="dateline">
+      <span>S&amp;P 500 &middot; Dow Jones &middot; Nasdaq — tendenza, massimi storici, outlook</span>
+      <span id="meta"></span>
     </div>
-    <div class="meta" id="meta"></div>
-  </header>
+  </div>
 
   <div id="app"><div class="loading">Caricamento dati…</div></div>
 
   <div class="disclaimer">
-    ⚠️ <b>Disclaimer.</b> Dashboard a scopo <b>informativo ed educativo</b>, <b>non
-    è consulenza finanziaria</b>. Verdetti e outlook sono generati automaticamente
-    da indicatori tecnici e da notizie pubbliche (Yahoo Finance): <b>non sono
-    previsioni</b>. La distanza dai massimi storici è calcolata sulla storia
-    disponibile. I dati possono essere ritardati. Verifica sempre da fonti ufficiali.
+    Pubblicazione a scopo informativo ed educativo; non costituisce consulenza finanziaria
+    né sollecitazione all'investimento. Verdetti, outlook e sintesi sono elaborati automaticamente
+    da indicatori tecnici, livelli di prezzo e notizie pubbliche: non sono previsioni. La distanza
+    dai massimi storici è calcolata sulla storia disponibile. I dati possono essere ritardati.
+    Verificare sempre presso fonti ufficiali.
   </div>
 </div>
 
@@ -145,6 +163,7 @@ const FMT = new Intl.NumberFormat('it-IT',{maximumFractionDigits:2});
 const fmt = n => (n==null?'—':FMT.format(n));
 const pct = n => (n==null?'—':(n>=0?'+':'')+FMT.format(n)+'%');
 const cls = n => n==null?'flat':(n>0?'up':n<0?'down':'flat');
+const UP='#17663b', DOWN='#a12a1d', GOLD='#8a6a1e';
 let CURRENT=0, DATA=null;
 
 async function load(){
@@ -156,58 +175,64 @@ async function load(){
     render();
   }catch(e){
     document.getElementById('app').innerHTML =
-      '<div class="loading">Impossibile caricare i dati.<br>Attendi il primo aggiornamento automatico.</div>';
+      '<div class="loading">Impossibile caricare i dati. Attendere il primo aggiornamento.</div>';
   }
+}
+
+function meterColor(v,invert){
+  if(invert){ return v>=55?DOWN:v>=28?GOLD:UP; }
+  return v>=62?UP:v<=42?DOWN:GOLD;
+}
+function meterHTML(label,val,sub,invert){
+  const c = meterColor(val,invert);
+  return '<div class="meter"><div class="top"><span>'+label+'</span><b class="tnum" style="color:'+c+'">'+fmt(val)+'<span style="font-size:12px;color:var(--muted)"> /100</span></b></div>'+
+    '<div class="bar"><span style="width:'+Math.max(0,Math.min(100,val))+'%;background:'+c+'"></span></div>'+
+    '<small>'+sub+'</small></div>';
 }
 
 function render(){
   const m = DATA.market, d = new Date(DATA.updated_at);
+  const pc = m.phase==='Bullish'?UP:m.phase==='Bearish'?DOWN:GOLD;
   document.getElementById('meta').innerHTML =
-    (DATA.demo?'<span class="badge demo">dati demo</span>':'')+
-    '<span class="dot"></span> aggiornato: '+d.toLocaleString('it-IT')+' · fonte: '+DATA.source;
+    (DATA.demo?'<span class="demo">Dati dimostrativi</span> &middot; ':'')+
+    'Aggiornato '+d.toLocaleString('it-IT')+' &middot; '+DATA.source;
 
-  const phaseColor = m.phase==='Bullish'?'var(--bull)':m.phase==='Bearish'?'var(--bear)':'var(--neutral)';
-  let html = '<div class="grid hero">';
-  html += '<div class="card"><div class="kpi-label">Fase di mercato complessiva</div>'+
-    '<div class="phase-big" style="color:'+phaseColor+'">'+m.phase+'</div>'+
-    '<div class="phase-desc">'+m.description+'</div>'+
-    '<div style="margin-top:12px" class="pill">'+m.bullish_count+'/3 indici bullish · '+m.bearish_count+'/3 bearish</div></div>';
-  html += '<div class="card"><div class="kpi-label">Forza tecnica media</div>'+
-    '<div class="gauge-wrap" style="margin-top:14px"><div class="gauge"><canvas id="g-score"></canvas>'+
-    '<div class="val" style="color:'+phaseColor+'">'+fmt(m.avg_score)+'<small>/100</small></div></div>'+
-    '<div style="font-size:12px;color:var(--muted)">0 = molto debole<br>100 = molto forte</div></div></div>';
-  const rc = m.avg_correction_risk>=60?'var(--bear)':m.avg_correction_risk>=30?'var(--warn)':'var(--bull)';
-  html += '<div class="card"><div class="kpi-label">Rischio correzione medio</div>'+
-    '<div class="gauge-wrap" style="margin-top:14px"><div class="gauge"><canvas id="g-risk"></canvas>'+
-    '<div class="val" style="color:'+rc+'">'+fmt(m.avg_correction_risk)+'<small>/100</small></div></div>'+
-    '<div style="font-size:12px;color:var(--muted)">stima di eccesso /<br>ipercomprato</div></div></div>';
-  html += '</div>';
+  let h = '';
+  // LEAD: fase + meter
+  h += '<div class="grid lead">';
+  h += '<div class="panel"><div class="sub-h">Quadro complessivo</div>'+
+       '<div class="phase-word" style="color:'+pc+'">'+m.phase+'</div>'+
+       '<div class="phase-desc">'+m.description+'</div>'+
+       '<div class="phase-tag">'+m.bullish_count+' indici su 3 in tendenza rialzista &middot; '+m.bearish_count+' in ribasso</div></div>';
+  h += '<div class="panel">'+
+       meterHTML('Forza tecnica media', m.avg_score, '0 = molto debole · 100 = molto forte', false)+
+       meterHTML('Rischio correzione medio', m.avg_correction_risk, 'stima di eccesso / ipercomprato', true)+
+       '</div>';
+  h += '</div>';
 
-  // CARD INDICI con distanza dai massimi
-  html += '<div class="grid cards">';
+  // QUOTES
+  h += '<div class="grid quotes">';
   DATA.indices.forEach((ix,i)=>{
-    const athCol = ix.at_ath?'var(--bull)':(ix.pct_from_ath<-15?'var(--bear)':'var(--neutral)');
-    html += '<div class="card idx-card'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+
+    const ac = ix.at_ath?UP:(ix.pct_from_ath<-15?DOWN:GOLD);
+    h += '<div class="quote'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+
       '<canvas class="spark" id="sp-'+i+'"></canvas>'+
       '<div class="nm">'+ix.name+'</div><div class="sym">'+ix.symbol+'</div>'+
-      '<div class="px">'+fmt(ix.price)+'</div>'+
-      '<div class="chg '+cls(ix.change_pct)+'">'+pct(ix.change_pct)+' ('+(ix.change>=0?'+':'')+fmt(ix.change)+')</div>'+
-      '<span class="vbadge v-'+ix.verdict+'">'+ix.verdict+'</span>'+
-      '<div class="card-ath">Dai massimi storici: <b style="color:'+athCol+'">'+
-        (ix.at_ath?'ai massimi 🏔️':pct(ix.pct_from_ath))+'</b></div>'+
+      '<div class="px tnum">'+fmt(ix.price)+'</div>'+
+      '<div class="chg '+cls(ix.change_pct)+' tnum">'+pct(ix.change_pct)+' &nbsp;'+(ix.change>=0?'+':'')+fmt(ix.change)+'</div>'+
+      '<div><span class="verdict vd-'+ix.verdict+'">'+ix.verdict+'</span></div>'+
+      '<div class="ath">Dai massimi storici &nbsp;<b style="color:'+ac+'" class="tnum">'+(ix.at_ath?'ai massimi':pct(ix.pct_from_ath))+'</b></div>'+
       '</div>';
   });
-  html += '</div>';
+  h += '</div>';
 
-  html += '<div class="tabs">';
-  DATA.indices.forEach((ix,i)=> html += '<div class="tab'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+ix.name+'</div>');
-  html += '</div><div id="detail"></div>';
-  html += rotationHTML();     // rotazione settoriale (livello mercato)
-  html += marketNewsHTML();   // notizie di mercato + ricerca istituzionale
+  h += '<div class="tabs">';
+  DATA.indices.forEach((ix,i)=> h += '<div class="tab'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+ix.name+'</div>');
+  h += '</div><div id="detail"></div>';
 
-  document.getElementById('app').innerHTML = html;
-  buildGauge('g-score', m.avg_score, phaseColor);
-  buildGauge('g-risk', m.avg_correction_risk, rc);
+  h += rotationHTML();
+  h += marketNewsHTML();
+
+  document.getElementById('app').innerHTML = h;
   DATA.indices.forEach((ix,i)=>buildSpark('sp-'+i, ix));
   renderDetail();
 }
@@ -217,131 +242,106 @@ function renderDetail(){
   const ix = DATA.indices[CURRENT], t = ix.technical, o = ix.outlook;
   const lo = Math.min(t.low_52w, ix.ath), hi = ix.ath;
   const posATH = Math.max(0, Math.min(100, (ix.price - lo)/((hi-lo)||1)*100));
-  const athCol = ix.at_ath?'var(--bull)':(ix.pct_from_ath<-15?'var(--bear)':'var(--neutral)');
+  const ac = ix.at_ath?UP:(ix.pct_from_ath<-15?DOWN:GOLD);
 
-  let h = '<div class="grid detail">';
-
-  // PANNELLO MASSIMI STORICI
-  h += '<div class="card"><h3 class="sec">🏔️ Distanza dai massimi storici — '+ix.name+'</h3>'+
+  let h = '';
+  // ATH
+  h += '<div class="panel"><div class="sub-h">Distanza dai massimi storici — '+ix.name+'</div>'+
     '<div class="ath-panel">'+
-      '<div><div class="ath-big" style="color:'+athCol+'">'+(ix.at_ath?'Ai massimi':pct(ix.pct_from_ath))+'</div>'+
+      '<div><div class="ath-big" style="color:'+ac+'" >'+(ix.at_ath?'Ai massimi':pct(ix.pct_from_ath))+'</div>'+
         '<div class="ath-sub">'+(ix.at_ath?'entro lo 0,5% dal record':'sotto il massimo storico')+'</div></div>'+
-      '<div class="ath-track"><div class="ath-bar"></div>'+
-        '<div class="ath-cur" style="left:'+posATH+'%"></div>'+
-        '<div class="ath-ends"><span>min 52s '+fmt(t.low_52w)+'</span><span>ATH '+fmt(ix.ath)+'</span></div></div>'+
+      '<div class="ath-scale"><div class="track"></div><div class="cur" style="left:'+posATH+'%"></div>'+
+        '<div class="ends"><span class="tnum">min 52s '+fmt(t.low_52w)+'</span><span class="tnum">record '+fmt(ix.ath)+'</span></div></div>'+
       '<div style="text-align:right"><div class="ath-sub">Prezzo attuale</div>'+
-        '<div style="font-size:22px;font-weight:800">'+fmt(ix.price)+'</div>'+
-        '<div class="ath-sub">Record: <b>'+fmt(ix.ath)+'</b></div></div>'+
+        '<div class="serif tnum" style="font-size:24px;font-weight:700">'+fmt(ix.price)+'</div></div>'+
     '</div></div>';
 
-  // GRAFICO PREZZO
-  h += '<div class="card"><h3 class="sec">Andamento prezzo · medie mobili · massimo storico</h3>'+
-    '<div class="hint">La linea <b style="color:#4a9eff">blu</b> è la media a 50 giorni (tendenza di breve), la '+
-    '<b style="color:#e0b23c">gialla</b> quella a 200 giorni (tendenza di lungo). Prezzo sopra le medie = forza. '+
-    'La linea tratteggiata bianca è il <b>massimo storico</b>.</div>'+
+  // PRICE
+  h += '<div class="panel"><div class="sub-h">Andamento, medie mobili e massimo storico</div>'+
+    '<div class="note">Linea scura: prezzo. Linea <b style="color:'+GOLD+'">oro</b>: media 50 giorni (breve). Linea '+
+    '<b style="color:#6a7f96">grigio-blu</b>: media 200 giorni (lungo). Tratteggiata: massimo storico.</div>'+
     '<div class="chart-box"><canvas id="c-price"></canvas></div></div>';
 
-  // VOLUMI
-  h += '<div class="card"><h3 class="sec">📊 Volumi degli scambi</h3>'+
-    '<div class="hint">Quante contrattazioni al giorno. Volumi <b>alti</b> confermano la forza di un movimento; '+
-    'un rialzo con volumi in calo è meno affidabile. Le barre <b style="color:var(--bull)">verdi</b> = giornate in rialzo, '+
-    '<b style="color:var(--bear)">rosse</b> = in ribasso.</div>'+
+  // VOLUME
+  h += '<div class="panel"><div class="sub-h">Volumi degli scambi</div>'+
+    '<div class="note">Volumi elevati confermano la forza di un movimento; un rialzo con volumi in calo è meno affidabile. '+
+    'Barre verdi: giornate in rialzo; rosse: in ribasso.</div>'+
     '<div class="chart-box sm"><canvas id="c-vol"></canvas></div></div>';
 
-  // RSI + MACD affiancati con spiegazione
-  h += '<div class="grid two">'+
-    '<div class="card"><h3 class="sec">RSI (forza del movimento)</h3>'+
-      '<div class="hint">Sopra <b>70</b> = ipercomprato (possibile correzione). Sotto <b>30</b> = ipervenduto (possibile rimbalzo).</div>'+
+  // RSI + MACD
+  h += '<div class="grid two" style="margin-top:14px">'+
+    '<div class="panel"><div class="sub-h">RSI — forza del movimento</div>'+
+      '<div class="note">Sopra 70: ipercomprato (possibile correzione). Sotto 30: ipervenduto (possibile rimbalzo).</div>'+
       '<div class="chart-box sm"><canvas id="c-rsi"></canvas></div></div>'+
-    '<div class="card"><h3 class="sec">MACD (momentum)</h3>'+
-      '<div class="hint">Istogramma <b style="color:var(--bull)">verde/sopra 0</b> = spinta rialzista; '+
-      '<b style="color:var(--bear)">rosso/sotto 0</b> = spinta ribassista.</div>'+
+    '<div class="panel"><div class="sub-h">MACD — momentum</div>'+
+      '<div class="note">Istogramma sopra lo zero: spinta rialzista; sotto lo zero: spinta ribassista.</div>'+
       '<div class="chart-box sm"><canvas id="c-macd"></canvas></div></div>'+
     '</div>';
 
   // OUTLOOK + TECNICA
-  h += '<div class="grid panels">';
-  // outlook
-  const vc = ix.verdict==='Bullish'?'var(--bull)':ix.verdict==='Bearish'?'var(--bear)':'var(--neutral)';
-  h += '<div class="card"><h3 class="sec">🧭 Outlook · cosa può confermare o cambiare il trend</h3>'+
-    '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">'+
-      '<div style="font-size:22px;font-weight:800;color:'+vc+'">'+ix.verdict+'</div>'+
-      '<div class="pill">forza '+fmt(ix.score)+'/100</div></div>'+
-    '<div class="out-block out-confirm"><div class="lab">✔ Cosa conferma il trend</div><p>'+o.confirm+'</p></div>'+
-    '<div class="out-block out-change"><div class="lab">⚠ Cosa lo cambierebbe</div><p>'+o.change+'</p></div>'+
-    (o.note?'<div class="out-block"><div class="lab" style="color:var(--warn)">Nota di breve</div><p>'+o.note+'</p></div>':'')+
-    '<div class="kpi-label" style="margin-top:6px">Livelli chiave da osservare</div>'+
+  h += '<div class="grid panels" style="margin-top:14px">';
+  const vc = ix.verdict==='Bullish'?UP:ix.verdict==='Bearish'?DOWN:GOLD;
+  h += '<div class="panel"><div class="sub-h">Outlook — cosa può confermare o cambiare il trend</div>'+
+    '<div class="serif" style="font-size:20px;font-weight:700;color:'+vc+'">'+ix.verdict+
+      ' <span style="font-size:12px;color:var(--muted);font-family:inherit">forza '+fmt(ix.score)+'/100</span></div>'+
+    '<div class="ob confirm"><div class="lab">Cosa conferma il trend</div><p>'+o.confirm+'</p></div>'+
+    '<div class="ob change"><div class="lab">Cosa lo cambierebbe</div><p>'+o.change+'</p></div>'+
+    (o.note?'<div class="ob"><div class="lab" style="color:var(--gold)">Nota di breve</div><p>'+o.note+'</p></div>':'')+
     '<div class="levels">'+
-      lvl(o.support, 'Supporto (SMA200)', 'var(--bull)')+
-      lvl(o.pivot, 'Spartiacque (SMA50)', 'var(--accent)')+
-      lvl(o.resistance, 'Resistenza (max 52s)', 'var(--neutral)')+
+      lvl(o.support,'Supporto · SMA200')+lvl(o.pivot,'Spartiacque · SMA50')+lvl(o.resistance,'Resistenza · max 52s')+
     '</div></div>';
-  // tecnica sintetica
-  h += '<div class="card"><h3 class="sec">📈 Quadro tecnico</h3>'+
-    rowH('RSI (14)', t.rsi==null?'—':fmt(t.rsi)+(t.rsi>=70?' · ipercomprato':t.rsi<=30?' · ipervenduto':''))+
-    rowH('MACD', (t.macd_hist>0?'<span class="up">rialzista</span>':'<span class="down">ribassista</span>'))+
-    rowH('Media 50 giorni', fmt(t.sma50))+
-    rowH('Media 200 giorni', fmt(t.sma200))+
-    rowH('Tendenza lungo periodo', t.golden_cross?'<span class="bull-t">Golden cross ▲</span>':'<span class="bear-t">Death cross ▼</span>')+
-    rowH('Massimo storico', fmt(ix.ath))+
-    rowH('Dai massimi storici', '<span class="'+cls(ix.pct_from_ath)+'">'+(ix.at_ath?'ai massimi':pct(ix.pct_from_ath))+'</span>')+
-    rowH('Rischio correzione', '<b style="color:'+(ix.correction_risk>=60?'var(--bear)':ix.correction_risk>=30?'var(--warn)':'var(--bull)')+'">'+ix.correction_risk_label+'</b>')+
-    '<div class="kpi-label" style="margin-top:10px">Rendimenti</div>'+
-    '<div class="levels" style="grid-template-columns:repeat(5,1fr)">'+
-      retC('1S',ix.returns.w1)+retC('1M',ix.returns.m1)+retC('3M',ix.returns.m3)+retC('6M',ix.returns.m6)+retC('1A',ix.returns.y1)+
-    '</div></div>';
+  h += '<div class="panel"><div class="sub-h">Quadro tecnico</div><div class="dl">'+
+    row('RSI (14)', t.rsi==null?'—':fmt(t.rsi)+(t.rsi>=70?' · ipercomprato':t.rsi<=30?' · ipervenduto':''))+
+    row('MACD', t.macd_hist>0?'<span class="up">rialzista</span>':'<span class="down">ribassista</span>')+
+    row('Media 50 giorni', fmt(t.sma50))+
+    row('Media 200 giorni', fmt(t.sma200))+
+    row('Tendenza di lungo', t.golden_cross?'<span class="up">Golden cross</span>':'<span class="down">Death cross</span>')+
+    row('Massimo storico', fmt(ix.ath))+
+    row('Dai massimi storici', '<span class="'+cls(ix.pct_from_ath)+'">'+(ix.at_ath?'ai massimi':pct(ix.pct_from_ath))+'</span>')+
+    row('Rischio correzione', '<b style="color:'+(ix.correction_risk>=55?DOWN:ix.correction_risk>=28?GOLD:UP)+'">'+ix.correction_risk_label+'</b>')+
+    '</div>'+
+    '<div class="rets">'+ret('1 sett.',ix.returns.w1)+ret('1 mese',ix.returns.m1)+ret('3 mesi',ix.returns.m3)+ret('6 mesi',ix.returns.m6)+ret('1 anno',ix.returns.y1)+'</div>'+
+    '</div>';
   h += '</div>';
 
-  // NOTIZIE dell'indice (senza link)
-  h += '<div class="card"><h3 class="sec">📰 Notizie recenti — '+ix.name+'</h3>'+
-    '<div class="hint">Titoli su questo indice (macro, geopolitica, trimestrali).</div>';
-  if(ix.news && ix.news.length){
-    h += ix.news.map(newsItemHTML).join('');
-  } else { h += '<div style="color:var(--muted);font-size:13px">Nessuna notizia recente disponibile.</div>'; }
-  h += '</div>';
+  // NEWS indice
+  h += '<div class="panel" style="margin-top:14px"><div class="sub-h">Notizie recenti — '+ix.name+'</div>'+
+    '<div class="news">';
+  if(ix.news && ix.news.length){ h += ix.news.map(newsHTML).join(''); }
+  else { h += '<div class="note">Nessuna notizia recente disponibile.</div>'; }
+  h += '</div></div>';
 
-  h += '</div>';
   document.getElementById('detail').innerHTML = h;
   buildDetailCharts(ix);
 }
 
-function rowH(k,v){return '<div class="row"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>';}
-function retC(l,v){return '<div class="lvl"><div class="n '+cls(v)+'" style="font-size:13px">'+pct(v)+'</div><div class="t">'+l+'</div></div>';}
-function lvl(n,t,c){return '<div class="lvl"><div class="n" style="color:'+c+'">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
-
-function newsItemHTML(n){
-  // niente link: solo titolo + fonte (riassunto)
-  return '<div class="news-item"><div class="tt">'+n.title+'</div><div class="src">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';
-}
+function row(k,v){return '<div class="r"><span class="k">'+k+'</span><span class="v tnum">'+v+'</span></div>';}
+function ret(l,v){return '<div class="c"><div class="n '+cls(v)+' tnum">'+pct(v)+'</div><div class="l">'+l+'</div></div>';}
+function lvl(n,t){return '<div class="lvl"><div class="n tnum">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
+function newsHTML(n){return '<div class="it"><div class="h">'+n.title+'</div><div class="m">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';}
 
 function rotationHTML(){
   const r = DATA.rotation;
   if(!r || !r.sectors || !r.sectors.length) return '';
-  const sc = r.signal||'';
-  const col = sc.indexOf('Risk-on')>=0?'var(--bull)':sc.indexOf('Risk-off')>=0?'var(--bear)':'var(--neutral)';
-  const bg = sc.indexOf('Risk-on')>=0?'rgba(38,194,129,.15)':sc.indexOf('Risk-off')>=0?'rgba(255,92,108,.15)':'rgba(224,178,60,.15)';
+  const col = r.signal.indexOf('Risk-on')>=0?UP:r.signal.indexOf('Risk-off')>=0?DOWN:GOLD;
   const maxAbs = Math.max(1, ...r.sectors.map(s=>Math.abs(s.score||0)));
-  let h = '<div class="sec-title">🔄 Rotazione settoriale</div>';
-  h += '<div class="card">';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:6px">'+
-       '<span class="sigbadge" style="color:'+col+';background:'+bg+'">'+sc+'</span>'+
-       '<span style="color:var(--muted);font-size:12px">In testa: <b style="color:var(--bull)">'+r.leaders.join(', ')+'</b> · In coda: <b style="color:var(--bear)">'+r.laggards.join(', ')+'</b></span></div>';
-  h += '<div class="hint">'+r.note+'</div>';
-  h += '<div class="hint" style="margin-top:0">Ordinati per momentum (media rendimenti 1 e 3 mesi). Barra a destra = forza, a sinistra = debolezza. Fonte: ETF settoriali SPDR.</div>';
+  let h = '<div class="sec-h">Rotazione settoriale</div>';
+  h += '<div class="panel">';
+  h += '<div class="signal-line"><span class="signal-tag" style="color:'+col+';border-color:'+col+'">'+r.signal+'</span>'+
+       ' &nbsp; In testa: <b>'+r.leaders.join(', ')+'</b> · In coda: <b>'+r.laggards.join(', ')+'</b></div>';
+  h += '<div class="note">'+r.note+'</div>';
+  h += '<div class="note" style="margin-top:0">Ordinati per momentum (media dei rendimenti a 1 e 3 mesi). Fonte: ETF settoriali SPDR.</div>';
+  h += '<table class="rot"><tbody>';
   r.sectors.forEach(s=>{
-    const v = s.score||0, pos = v>=0;
-    const w = Math.min(50, Math.abs(v)/maxAbs*50);
-    const fill = pos
-      ? '<div class="rot-fill" style="left:50%;width:'+w+'%;background:var(--bull)"></div>'
-      : '<div class="rot-fill" style="right:50%;width:'+w+'%;background:var(--bear)"></div>';
-    h += '<div class="rot-row">'+
-      '<div class="rot-rank">'+s.rank+'</div>'+
-      '<div class="rot-nm">'+s.name+'<span class="rot-grp grp-'+s.group+'">'+s.group+'</span></div>'+
-      '<div class="rot-track"><div class="rot-mid"></div>'+fill+'</div>'+
-      '<div class="rot-val '+(pos?'up':'down')+'">'+(s.ret_3m==null?'—':pct(s.ret_3m))+'</div>'+
-      '</div>';
+    const v=s.score||0, pos=v>=0, w=Math.min(50,Math.abs(v)/maxAbs*50);
+    const fill = pos?'<div class="fill" style="left:50%;width:'+w+'%;background:'+UP+'"></div>'
+                    :'<div class="fill" style="right:50%;width:'+w+'%;background:'+DOWN+'"></div>';
+    h += '<tr><td class="rk tnum">'+s.rank+'</td>'+
+      '<td class="nm">'+s.name+' <span class="grp">'+s.group+'</span></td>'+
+      '<td class="barcell"><div class="track"><div class="mid"></div>'+fill+'</div></td>'+
+      '<td class="val '+(pos?'up':'down')+'">'+(s.ret_3m==null?'—':pct(s.ret_3m))+'</td></tr>';
   });
-  h += '</div>';
+  h += '</tbody></table></div>';
   return h;
 }
 
@@ -350,96 +350,74 @@ function marketNewsHTML(){
   const mn = m.news_market||[], rn = m.news_research||[];
   const sum = (DATA.summary&&DATA.summary.text)?DATA.summary:null;
   if(!mn.length && !rn.length && !sum) return '';
-  let h = '<div class="sec-title">🗞️ Riassunto notizie principali</div>';
-
-  // sintesi discorsiva (se disponibile)
+  let h = '<div class="sec-h">Riassunto delle notizie principali</div>';
   if(sum){
-    h += '<div class="card" style="margin-bottom:14px">'+
-      '<div class="hint" style="margin:0 0 8px">Sintesi aggiornata: '+
-      (sum.updated?new Date(sum.updated).toLocaleString('it-IT'):'')+'</div>'+
-      '<p style="margin:0;font-size:14.5px;line-height:1.6">'+sum.text+'</p>';
+    h += '<div class="panel"><div class="sub-h">Sintesi'+(sum.updated?' · '+new Date(sum.updated).toLocaleString('it-IT'):'')+'</div>'+
+      '<div class="summary-text">'+sum.text+'</div>';
     if(sum.bullets&&sum.bullets.length){
-      h += '<ul class="reasons" style="margin-top:10px">'+
-        sum.bullets.map(b=>'<li><span class="ic neutral-t">•</span><span>'+b+'</span></li>').join('')+'</ul>';
+      h += '<ul class="bullets">'+sum.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul>';
     }
     h += '</div>';
   }
-
-  // digest sintetico dei titoli (senza link)
-  h += '<div class="grid news2">';
-  h += '<div class="card"><h3 class="sec">In evidenza sui mercati</h3>'+
-       '<div class="hint">Il Sole 24 Ore · Milano Finanza · Investing e altri.</div>'+
-       (mn.length?mn.slice(0,6).map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessuna notizia al momento.</div>')+'</div>';
-  h += '<div class="card"><h3 class="sec">Dalle view di Goldman Sachs · J.P. Morgan · Fidelity</h3>'+
-       '<div class="hint">Cosa dicono le grandi case d\'investimento (articoli e studi recenti).</div>'+
-       (rn.length?rn.slice(0,6).map(newsItemHTML).join(''):'<div style="color:var(--muted);font-size:13px">Nessun articolo recente trovato.</div>')+'</div>';
+  h += '<div class="grid two" style="margin-top:14px">';
+  h += '<div class="panel"><div class="sub-h">In evidenza sui mercati</div>'+
+       '<div class="note">Il Sole 24 Ore · Milano Finanza · Investing e altri.</div><div class="news">'+
+       (mn.length?mn.slice(0,6).map(newsHTML).join(''):'<div class="note">Nessuna notizia al momento.</div>')+'</div></div>';
+  h += '<div class="panel"><div class="sub-h">Dalle view di Goldman Sachs · J.P. Morgan · Fidelity</div>'+
+       '<div class="note">Articoli e studi recenti sulle loro posizioni di mercato.</div><div class="news">'+
+       (rn.length?rn.slice(0,6).map(newsHTML).join(''):'<div class="note">Nessun articolo recente trovato.</div>')+'</div></div>';
   h += '</div>';
   return h;
 }
 
-/* ---------- CHARTS ---------- */
-const GRID='#263043', TICK='#8b98ab';
+/* ---------- CHARTS (tema chiaro, sobrio) ---------- */
+const GRID='#e6e0d3', TICK='#8a8478', INK='#1c1b19';
 function baseOpts(extra){return Object.assign({responsive:true,maintainAspectRatio:false,
   interaction:{mode:'index',intersect:false},
-  plugins:{legend:{display:false},tooltip:{backgroundColor:'#0b0e14',borderColor:GRID,borderWidth:1}},
-  scales:{x:{grid:{color:GRID},ticks:{color:TICK,maxTicksLimit:7,autoSkip:true}},
-          y:{grid:{color:GRID},ticks:{color:TICK}}}},extra||{});}
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c1b19',titleColor:'#f6f3ec',
+    bodyColor:'#f6f3ec',borderColor:'#1c1b19',borderWidth:0,padding:8}},
+  scales:{x:{grid:{color:GRID},ticks:{color:TICK,maxTicksLimit:7,autoSkip:true,font:{size:11}}},
+          y:{grid:{color:GRID},ticks:{color:TICK,font:{size:11}}}}},extra||{});}
 
 function buildDetailCharts(ix){
-  const s=ix.series, up=ix.change_pct>=0, line=up?'#26c281':'#ff5c6c';
+  const s=ix.series;
   const athArr = s.dates.map(()=>ix.ath);
   mk('c-price',{type:'line',data:{labels:s.dates,datasets:[
-    {label:'Prezzo',data:s.close,borderColor:line,borderWidth:2.2,pointRadius:0,fill:true,backgroundColor:ctxGrad(line),tension:.15},
-    {label:'Media 50g',data:s.sma50,borderColor:'#4a9eff',borderWidth:1.4,pointRadius:0,tension:.1},
-    {label:'Media 200g',data:s.sma200,borderColor:'#e0b23c',borderWidth:1.4,pointRadius:0,tension:.1},
-    {label:'Massimo storico',data:athArr,borderColor:'rgba(255,255,255,.55)',borderWidth:1.2,pointRadius:0,borderDash:[6,5]},
-  ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:12,font:{size:11},usePointStyle:true}},
-    tooltip:{backgroundColor:'#0b0e14'}}})});
+    {label:'Prezzo',data:s.close,borderColor:'#1c1b19',borderWidth:1.7,pointRadius:0,fill:true,
+      backgroundColor:'rgba(23,50,81,.05)',tension:.12},
+    {label:'Media 50g',data:s.sma50,borderColor:GOLD,borderWidth:1.2,pointRadius:0,tension:.1},
+    {label:'Media 200g',data:s.sma200,borderColor:'#6a7f96',borderWidth:1.2,pointRadius:0,tension:.1},
+    {label:'Massimo storico',data:athArr,borderColor:'rgba(28,27,25,.45)',borderWidth:1,pointRadius:0,borderDash:[5,4]},
+  ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:14,font:{size:11},usePointStyle:true}},
+    tooltip:{backgroundColor:'#1c1b19'}}})});
 
-  // volumi colorati per direzione della giornata
-  const vcol = s.volume.map((_,i)=> i>0 && s.close[i] < s.close[i-1]
-    ? 'rgba(255,92,108,.55)' : 'rgba(38,194,129,.55)');
-  mk('c-vol',{type:'bar',data:{labels:s.dates,datasets:[{data:s.volume,backgroundColor:vcol,
-    borderWidth:0}]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},
-    y:{grid:{color:GRID},ticks:{color:TICK,callback:v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(0)+'M':v}}}})});
+  const vcol = s.volume.map((_,i)=> i>0 && s.close[i] < s.close[i-1] ? 'rgba(161,42,29,.42)' : 'rgba(23,102,59,.42)');
+  mk('c-vol',{type:'bar',data:{labels:s.dates,datasets:[{data:s.volume,backgroundColor:vcol,borderWidth:0}]},
+    options:baseOpts({scales:{x:{display:false,grid:{display:false}},
+    y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10},callback:v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(0)+'M':v}}}})});
 
   mk('c-rsi',{type:'line',data:{labels:s.dates,datasets:[
-    {data:s.rsi,borderColor:'#a78bfa',borderWidth:1.8,pointRadius:0,tension:.1},
-    {data:s.dates.map(()=>70),borderColor:'rgba(255,92,108,.5)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
-    {data:s.dates.map(()=>30),borderColor:'rgba(38,194,129,.5)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
+    {data:s.rsi,borderColor:'#5b4a7a',borderWidth:1.5,pointRadius:0,tension:.1},
+    {data:s.dates.map(()=>70),borderColor:'rgba(161,42,29,.45)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
+    {data:s.dates.map(()=>30),borderColor:'rgba(23,102,59,.45)',borderWidth:1,pointRadius:0,borderDash:[4,4]},
   ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},
-    y:{min:0,max:100,grid:{color:GRID},ticks:{color:TICK,stepSize:25}}}})});
+    y:{min:0,max:100,grid:{color:GRID},ticks:{color:TICK,stepSize:25,font:{size:10}}}}})});
 
-  const hcol=s.macd_hist.map(v=>v==null?'#555':v>=0?'rgba(38,194,129,.65)':'rgba(255,92,108,.65)');
+  const hcol=s.macd_hist.map(v=>v==null?'#ccc':v>=0?'rgba(23,102,59,.5)':'rgba(161,42,29,.5)');
   mk('c-macd',{data:{labels:s.dates,datasets:[
     {type:'bar',data:s.macd_hist,backgroundColor:hcol},
-    {type:'line',data:s.macd,borderColor:'#4a9eff',borderWidth:1.4,pointRadius:0,tension:.1},
-    {type:'line',data:s.macd_signal,borderColor:'#ff9f43',borderWidth:1.4,pointRadius:0,tension:.1},
-  ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},y:{grid:{color:GRID},ticks:{color:TICK}}}})});
+    {type:'line',data:s.macd,borderColor:'#173251',borderWidth:1.3,pointRadius:0,tension:.1},
+    {type:'line',data:s.macd_signal,borderColor:GOLD,borderWidth:1.3,pointRadius:0,tension:.1},
+  ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10}}}}})});
 }
 
 function buildSpark(id,ix){
   const el=document.getElementById(id); if(!el)return;
-  const data=ix.series.close.slice(-40), up=ix.change_pct>=0;
+  const data=ix.series.close.slice(-40);
   new Chart(el,{type:'line',data:{labels:data.map((_,i)=>i),datasets:[{data,
-    borderColor:up?'#26c281':'#ff5c6c',borderWidth:1.6,pointRadius:0,fill:false,tension:.2}]},
+    borderColor:ix.change_pct>=0?UP:DOWN,borderWidth:1.4,pointRadius:0,fill:false,tension:.2}]},
     options:{responsive:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
     scales:{x:{display:false},y:{display:false}}}});
-}
-function buildGauge(id,val,color){
-  const el=document.getElementById(id); if(!el)return;
-  new Chart(el,{type:'doughnut',data:{datasets:[{data:[val,100-val],
-    backgroundColor:[color,'#1b2230'],borderWidth:0,circumference:360,cutout:'75%'}]},
-    options:{responsive:false,plugins:{legend:{display:false},tooltip:{enabled:false}}}});
-}
-function ctxGrad(color){
-  return (ctx)=>{
-    const {ctx:c,chartArea}=ctx.chart; if(!chartArea)return 'transparent';
-    const g=c.createLinearGradient(0,chartArea.top,0,chartArea.bottom);
-    const rgb = color==='#26c281'?'38,194,129':'255,92,108';
-    g.addColorStop(0,'rgba('+rgb+',.28)'); g.addColorStop(1,'rgba('+rgb+',0)');
-    return g;
-  };
 }
 function mk(id,cfg){const el=document.getElementById(id);if(el)new Chart(el,cfg);}
 

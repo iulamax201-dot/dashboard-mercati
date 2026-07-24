@@ -1,0 +1,47 @@
+name: Aggiorna dati mercati
+
+on:
+  schedule:
+    # ogni 30 minuti (orario UTC). GitHub può ritardare i job schedulati.
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}   # avvio manuale dal tab Actions
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/update-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Scarica dati e calcola analisi
+        run: python scripts/fetch_data.py
+
+      - name: Commit se ci sono aggiornamenti
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- docs/data.json; then
+            git add docs/data.json
+            git commit -m "chore: aggiornamento dati mercati [skip ci]"
+            git push
+          else
+            echo "Nessuna variazione nei dati."
+          fi

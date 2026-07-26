@@ -299,8 +299,12 @@ def fetch_futures() -> List[Dict]:
             meta = res.get("meta", {})
             closes = [c for c in res["indicators"]["quote"][0]["close"] if c is not None]
             price = meta.get("regularMarketPrice") or (closes[-1] if closes else None)
-            prev = meta.get("chartPreviousClose") or meta.get("previousClose") \
-                or (closes[-2] if len(closes) > 1 else price)
+            # variazione rispetto all'ULTIMA chiusura (non a inizio serie):
+            # previousClose e' la chiusura precedente; in mancanza, la penultima
+            # chiusura giornaliera. chartPreviousClose (inizio range) NON va usato.
+            prev = meta.get("previousClose") \
+                or (closes[-2] if len(closes) > 1 else None) \
+                or meta.get("chartPreviousClose")
             if price is None or not prev:
                 continue
             out.append({

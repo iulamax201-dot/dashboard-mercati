@@ -7,9 +7,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --paper:#151412; --panel:#1e1c18; --ink:#ece6d9; --muted:#9a9284;
+    --paper:#151412; --panel:#1e1c18; --ink:#ece6d9; --txt2:#c9c2b4; --muted:#9a9284;
     --rule:#34312a; --rule2:#26241f; --up:#4bb877; --down:#e26a5f;
-    --navy:#7ea6d0; --gold:#d3a648; --purple:#a897cf;
+    --navy:#7ea6d0; --gold:#d3a648; --purple:#a897cf; --mid:#4b473e;
+    --grid:#2f2c25; --tick:#8f887a; --cink:#ece6d9; --cfill:rgba(126,166,208,.10);
+    --cath:rgba(236,230,217,.42); --sma2:#7ea6d0;
+  }
+  :root[data-theme="light"]{
+    --paper:#f6f3ec; --panel:#fffdf8; --ink:#1c1b19; --txt2:#33302a; --muted:#6d675c;
+    --rule:#dcd6c8; --rule2:#ebe6da; --up:#17663b; --down:#a12a1d;
+    --navy:#173251; --gold:#8a6a1e; --purple:#5b4a7a; --mid:#c9c2b2;
+    --grid:#e6e0d3; --tick:#8a8478; --cink:#1c1b19; --cfill:rgba(23,50,81,.05);
+    --cath:rgba(28,27,25,.4); --sma2:#6a7f96;
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
@@ -28,6 +37,16 @@
   .dateline{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:baseline;
     font-size:12.5px;color:var(--muted)}
   .dateline .demo{color:var(--down);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+  .theme-btn{position:absolute;top:22px;right:0;background:none;border:1px solid var(--rule);
+    color:var(--muted);font-size:11px;padding:5px 11px;border-radius:20px;cursor:pointer;
+    letter-spacing:.05em;transition:.2s}
+  .theme-btn:hover{color:var(--ink);border-color:var(--muted)}
+  .masthead{position:relative}
+  .tf{display:flex;gap:5px;margin:2px 0 12px;flex-wrap:wrap}
+  .tfb{font-size:11px;padding:3px 10px;border:1px solid var(--rule);color:var(--muted);
+    cursor:pointer;letter-spacing:.03em;user-select:none;transition:.2s}
+  .tfb.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .tfb:hover{color:var(--ink)}
   /* section headers */
   .sec-h{font-family:Georgia,serif;font-weight:700;font-size:20px;margin:30px 0 2px;
     padding-bottom:6px;border-bottom:1px solid var(--ink)}
@@ -40,7 +59,7 @@
   .lead{grid-template-columns:1.6fr 1fr;align-items:start;margin-top:14px}
   @media(max-width:760px){.lead{grid-template-columns:1fr}}
   .phase-word{font-family:Georgia,serif;font-size:40px;font-weight:700;line-height:1.05;margin:2px 0 6px}
-  .phase-desc{font-size:14.5px;color:#c9c2b4;max-width:44ch}
+  .phase-desc{font-size:14.5px;color:var(--txt2);max-width:44ch}
   .phase-tag{font-size:12px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)}
   /* meters */
   .meter{margin:2px 0 14px}
@@ -97,7 +116,7 @@
   .ob{padding:10px 0;border-top:1px solid var(--rule2)}
   .ob .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:3px}
   .ob.confirm .lab{color:var(--up)} .ob.change .lab{color:var(--gold)}
-  .ob p{margin:0;font-size:14px;color:#c4bdaf}
+  .ob p{margin:0;font-size:14px;color:var(--txt2)}
   .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:12px;border:1px solid var(--rule)}
   .lvl{padding:10px;text-align:center;border-right:1px solid var(--rule)}
   .lvl:last-child{border-right:none}
@@ -117,7 +136,7 @@
   .rot .grp{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .rot .barcell{width:44%}
   .rot .track{position:relative;height:14px;background:var(--rule2)}
-  .rot .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#4b473e}
+  .rot .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--mid)}
   .rot .fill{position:absolute;top:2px;bottom:2px}
   .rot .val{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:64px}
   .signal-line{font-size:13px;margin-bottom:8px}
@@ -128,9 +147,9 @@
   .news .it:last-child{border-bottom:none}
   .news .it .h{font-family:Georgia,serif;font-size:15px;line-height:1.4;color:var(--ink)}
   .news .it .m{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
-  .summary-text{font-family:Georgia,serif;font-size:16px;line-height:1.7;color:#d8d1c4}
+  .summary-text{font-family:Georgia,serif;font-size:16px;line-height:1.7;color:var(--txt2)}
   .bullets{list-style:none;margin:12px 0 0;padding:0}
-  .bullets li{padding:5px 0 5px 16px;position:relative;font-size:14px;color:#c4bdaf}
+  .bullets li{padding:5px 0 5px 16px;position:relative;font-size:14px;color:var(--txt2)}
   .bullets li:before{content:"—";position:absolute;left:0;color:var(--muted)}
   .disclaimer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);color:var(--muted);font-size:11.5px;line-height:1.6}
   .loading{text-align:center;padding:70px;color:var(--muted)}
@@ -162,6 +181,7 @@
 <body>
 <div class="wrap">
   <div class="masthead">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">Tema chiaro</button>
     <div class="kicker">Osservatorio dei mercati azionari</div>
     <h1>Dashboard Mercati</h1>
     <div class="dateline">
@@ -186,9 +206,25 @@ const FMT = new Intl.NumberFormat('it-IT',{maximumFractionDigits:2});
 const fmt = n => (n==null?'—':FMT.format(n));
 const pct = n => (n==null?'—':(n>=0?'+':'')+FMT.format(n)+'%');
 const cls = n => n==null?'flat':(n>0?'up':n<0?'down':'flat');
-const UP='#4bb877', DOWN='#e26a5f', GOLD='#d3a648';
-let CURRENT=0, DATA=null, LAST_STAMP=null, STARTED=false;
+let UP='#4bb877', DOWN='#e26a5f', GOLD='#d3a648';
+let CURRENT=0, DATA=null, LAST_STAMP=null, STARTED=false, TF=252;
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function cssv(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function refreshColors(){ UP=cssv('--up'); DOWN=cssv('--down'); GOLD=cssv('--gold'); }
+// tema iniziale: scuro di default; se l'utente ha scelto, ricorda la scelta
+(function(){
+  if(localStorage.getItem('theme')==='light') document.documentElement.dataset.theme='light';
+})();
+function toggleTheme(){
+  const light = document.documentElement.dataset.theme==='light';
+  if(light) document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.dataset.theme='light';
+  localStorage.setItem('theme', light?'dark':'light');
+  const btn=document.getElementById('theme-btn'); if(btn) btn.textContent = light?'Tema chiaro':'Tema scuro';
+  refreshColors();
+  if(DATA) render('update');
+}
+function setTF(n){ TF=n; renderDetail(); }
 
 async function load(){
   try{
@@ -222,6 +258,9 @@ function meterHTML(label,val,sub,invert){
 }
 
 function render(mode){
+  refreshColors();
+  const tb=document.getElementById('theme-btn');
+  if(tb) tb.textContent = document.documentElement.dataset.theme==='light'?'Tema scuro':'Tema chiaro';
   const m = DATA.market, d = new Date(DATA.updated_at);
   const pc = m.phase==='Bullish'?UP:m.phase==='Bearish'?DOWN:GOLD;
   document.getElementById('meta').innerHTML =
@@ -324,9 +363,11 @@ function renderDetail(){
     '</div></div>';
 
   // PRICE
+  const tfs=[['1M',21],['6M',126],['1A',252],['2A',520],['Tutto',99999]];
   h += '<div class="panel"><div class="sub-h">Andamento, medie mobili e massimo storico</div>'+
+    '<div class="tf">'+tfs.map(t=>'<span class="tfb'+(TF===t[1]?' on':'')+'" onclick="setTF('+t[1]+')">'+t[0]+'</span>').join('')+'</div>'+
     '<div class="note">Linea scura: prezzo. Linea <b style="color:'+GOLD+'">oro</b>: media 50 giorni (breve). Linea '+
-    '<b style="color:#6a7f96">grigio-blu</b>: media 200 giorni (lungo). Tratteggiata: massimo storico.</div>'+
+    '<b style="color:'+cssv('--sma2')+'">grigio-blu</b>: media 200 giorni (lungo). Tratteggiata: massimo storico.</div>'+
     '<div class="chart-box"><canvas id="c-price"></canvas></div></div>';
 
   // VOLUME
@@ -507,23 +548,28 @@ function marketNewsHTML(){
 }
 
 /* ---------- CHARTS (tema chiaro, sobrio) ---------- */
-const GRID='#2f2c25', TICK='#8f887a', INK='#ece6d9';
-function baseOpts(extra){return Object.assign({responsive:true,maintainAspectRatio:false,
+function baseOpts(extra){const GRID=cssv('--grid'),TICK=cssv('--tick');
+  return Object.assign({responsive:true,maintainAspectRatio:false,
   interaction:{mode:'index',intersect:false},
   plugins:{legend:{display:false},tooltip:{backgroundColor:'#0e0d0b',titleColor:'#ece6d9',
-    bodyColor:'#ece6d9',borderColor:'#34312a',borderWidth:1,padding:8}},
+    bodyColor:'#ece6d9',borderColor:'#000',borderWidth:0,padding:8}},
   scales:{x:{grid:{color:GRID},ticks:{color:TICK,maxTicksLimit:7,autoSkip:true,font:{size:11}}},
           y:{grid:{color:GRID},ticks:{color:TICK,font:{size:11}}}}},extra||{});}
 
 function buildDetailCharts(ix){
-  const s=ix.series;
+  const s0=ix.series;
+  const n = (TF>=99999)?s0.dates.length:Math.min(TF, s0.dates.length);
+  const sl=a=>(a||[]).slice(-n);
+  const s={dates:sl(s0.dates),close:sl(s0.close),sma50:sl(s0.sma50),sma200:sl(s0.sma200),
+    volume:sl(s0.volume),rsi:sl(s0.rsi),macd:sl(s0.macd),macd_signal:sl(s0.macd_signal),macd_hist:sl(s0.macd_hist)};
+  const GRID=cssv('--grid'), TICK=cssv('--tick');
   const athArr = s.dates.map(()=>ix.ath);
   mk('c-price',{type:'line',data:{labels:s.dates,datasets:[
-    {label:'Prezzo',data:s.close,borderColor:'#ece6d9',borderWidth:1.7,pointRadius:0,fill:true,
-      backgroundColor:'rgba(126,166,208,.10)',tension:.12},
+    {label:'Prezzo',data:s.close,borderColor:cssv('--cink'),borderWidth:1.7,pointRadius:0,fill:true,
+      backgroundColor:cssv('--cfill'),tension:.12},
     {label:'Media 50g',data:s.sma50,borderColor:GOLD,borderWidth:1.2,pointRadius:0,tension:.1},
-    {label:'Media 200g',data:s.sma200,borderColor:'#7ea6d0',borderWidth:1.2,pointRadius:0,tension:.1},
-    {label:'Massimo storico',data:athArr,borderColor:'rgba(236,230,217,.42)',borderWidth:1,pointRadius:0,borderDash:[5,4]},
+    {label:'Media 200g',data:s.sma200,borderColor:cssv('--sma2'),borderWidth:1.2,pointRadius:0,tension:.1},
+    {label:'Massimo storico',data:athArr,borderColor:cssv('--cath'),borderWidth:1,pointRadius:0,borderDash:[5,4]},
   ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:14,font:{size:11},usePointStyle:true}},
     tooltip:{backgroundColor:'#0e0d0b'}}})});
 

@@ -200,8 +200,8 @@ def build_index_analysis(
     outlook = _build_outlook(verdict, price, v_sma50, v_sma200, v_rsi,
                              high_52, low_52)
 
-    # storico compatto per i grafici (max ~260 barre)
-    hist_len = min(len(closes), 260)
+    # storico per i grafici (fino a ~2 anni, per il selettore di orizzonte)
+    hist_len = min(len(closes), 520)
     s = len(closes) - hist_len
 
     return {

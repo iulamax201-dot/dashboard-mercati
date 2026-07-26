@@ -241,6 +241,8 @@ function render(mode){
        '</div>';
   h += '</div>';
 
+  h += climateHTML();   // VIX + stato mercati
+
   // QUOTES
   h += '<div class="grid quotes">';
   DATA.indices.forEach((ix,i)=>{
@@ -260,11 +262,15 @@ function render(mode){
   DATA.indices.forEach((ix,i)=> h += '<div class="tab'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+ix.name+'</div>');
   h += '</div><div id="detail"></div>';
 
+  h += europeHTML();
   h += rotationHTML();
   h += marketNewsHTML();
+  h += methodologyHTML();
 
   document.getElementById('app').innerHTML = h;
   DATA.indices.forEach((ix,i)=>buildSparkData(document.getElementById('sp-'+i), ix.series.close.slice(-40), ix.change_pct>=0));
+  if(DATA.europe) DATA.europe.forEach((x,i)=>buildSparkData(document.getElementById('eu-'+i), x.series.close.slice(-40), x.change_pct>=0));
+  if(DATA.vix) buildSparkData(document.getElementById('vix-spark'), DATA.vix.sparkline, DATA.vix.change_pct>=0);
   renderDetail();
   motion(mode);
 }
@@ -380,6 +386,75 @@ function row(k,v){return '<div class="r"><span class="k">'+k+'</span><span class
 function ret(l,v){return '<div class="c"><div class="n '+cls(v)+' tnum">'+pct(v)+'</div><div class="l">'+l+'</div></div>';}
 function lvl(n,t){return '<div class="lvl"><div class="n tnum">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
 function newsHTML(n){return '<div class="it"><div class="h">'+n.title+'</div><div class="m">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';}
+
+function marketOpen(zone){
+  const now=new Date(), day=now.getUTCDay(), h=now.getUTCHours()+now.getUTCMinutes()/60;
+  if(day===0||day===6) return {open:false,txt:'chiuso · weekend'};
+  if(zone==='US'){ const o=h>=13.5&&h<20; return {open:o,txt:o?'aperto':'chiuso'}; }
+  const o=h>=7&&h<15.5; return {open:o,txt:o?'aperto':'chiuso'};   // Europa (indicativo)
+}
+function statusBadge(s){ return '<span style="color:'+(s.open?UP:'var(--muted)')+';font-weight:700">'+
+  (s.open?'● ':'○ ')+s.txt+'</span>'; }
+
+function climateHTML(){
+  const v=DATA.vix, us=marketOpen('US'), eu=marketOpen('EU');
+  const ageMin=Math.max(0,Math.round((Date.now()-new Date(DATA.updated_at).getTime())/60000));
+  const ageTxt = ageMin<90 ? ageMin+' min fa' : Math.round(ageMin/60)+' ore fa';
+  let h='<div class="grid two" style="margin-top:14px">';
+  // VIX
+  if(v){
+    const vc = v.level<20?UP:(v.level<30?GOLD:DOWN);
+    h+='<div class="panel"><div class="sub-h">VIX — indice della paura</div>'+
+      '<div style="display:flex;align-items:center;gap:14px">'+
+        '<div class="serif tnum" style="font-size:34px;font-weight:700;color:'+vc+'">'+fmt(v.level)+'</div>'+
+        '<div><div class="'+cls(v.change_pct)+' tnum">'+pct(v.change_pct)+'</div>'+
+          '<span class="verdict" style="color:'+vc+';border-color:'+vc+'">'+v.label+'</span></div>'+
+        '<div style="margin-left:auto"><canvas id="vix-spark" width="120" height="38"></canvas></div>'+
+      '</div>'+
+      '<div class="note" style="margin-top:8px">'+v.desc+' &nbsp;<span style="color:var(--muted)">&lt;15 calma · 15–20 normale · 20–30 nervosismo · &gt;30 paura</span></div></div>';
+  }
+  // stato mercati
+  h+='<div class="panel"><div class="sub-h">Stato dei mercati</div><div class="dl">'+
+    '<div class="r"><span class="k">Wall Street (USA)</span><span class="v">'+statusBadge(us)+'</span></div>'+
+    '<div class="r"><span class="k">Borse europee</span><span class="v">'+statusBadge(eu)+'</span></div>'+
+    '<div class="r"><span class="k">Ultimo aggiornamento dati</span><span class="v">'+ageTxt+'</span></div>'+
+    '</div>'+
+    ((ageMin>60 && us.open)?'<div class="note" style="color:var(--gold);margin-top:8px">Dati non recentissimi a mercato aperto: il prossimo aggiornamento è in arrivo.</div>':'')+
+    '<div class="note" style="margin-top:6px;font-size:11px">Orari indicativi (non tengono conto di festività e ora legale).</div>'+
+    '</div>';
+  h+='</div>';
+  return h;
+}
+
+function europeHTML(){
+  const e=DATA.europe; if(!e||!e.length) return '';
+  let h='<div class="sec-h">Mercati europei</div>';
+  h+='<div class="note" style="margin-top:6px">Analisi tecnica sintetica dei principali indici europei (stesso motore degli indici USA).</div>';
+  h+='<div class="grid quotes" style="margin-top:6px">';
+  e.forEach((x,i)=>{
+    const ac=x.at_ath?UP:(x.pct_from_ath<-15?DOWN:GOLD);
+    h+='<div class="quote" style="cursor:default">'+
+      '<canvas class="spark" id="eu-'+i+'"></canvas>'+
+      '<div class="nm">'+x.name+'</div><div class="sym">'+x.symbol+'</div>'+
+      '<div class="px tnum">'+fmt(x.price)+'</div>'+
+      '<div class="chg '+cls(x.change_pct)+' tnum">'+pct(x.change_pct)+'</div>'+
+      '<div><span class="verdict vd-'+x.verdict+'">'+x.verdict+'</span></div>'+
+      '<div class="ath">Dai massimi storici &nbsp;<b style="color:'+ac+'" class="tnum">'+(x.at_ath?'ai massimi':pct(x.pct_from_ath))+'</b></div>'+
+      '</div>';
+  });
+  h+='</div>'; return h;
+}
+
+function methodologyHTML(){
+  return '<div class="sec-h">Metodologia e fonti</div>'+
+  '<div class="panel"><div class="note" style="font-size:13px;line-height:1.75">'+
+    '<b style="color:var(--ink)">Fonti.</b> Prezzi e storici: Yahoo Finance (con fallback Stooq). Fondamentali (P/E, dividend yield): via ETF proxy SPY/DIA/QQQ. Notizie: Google News in italiano (Il Sole 24 Ore, Milano Finanza, Investing e altri) e articoli sulle view di Goldman Sachs, J.P. Morgan e Fidelity. VIX e settori (ETF SPDR): Yahoo Finance.<br><br>'+
+    '<b style="color:var(--ink)">Verdetto (forza 0–100).</b> Combina prezzo rispetto alle medie 50/200 giorni, golden/death cross, MACD, RSI e rendimento a 1 mese. ≥ 62 = Bullish, ≤ 42 = Bearish, in mezzo Neutrale.<br><br>'+
+    '<b style="color:var(--ink)">Rischio correzione (0–100).</b> Somma segnali di eccesso: RSI ipercomprato, distanza dalle medie, vicinanza ai massimi storici, valutazione (P/E), banda di Bollinger e volatilità. ≥ 55 Alto, ≥ 28 Medio, sotto Basso.<br><br>'+
+    '<b style="color:var(--ink)">Rotazione settoriale.</b> Momentum (media rendimenti a 1 e 3 mesi) degli 11 settori USA: leadership dei ciclici = risk-on, dei difensivi = risk-off.<br><br>'+
+    '<b style="color:var(--ink)">Limiti.</b> Indicatori automatici a scopo informativo ed educativo, non previsioni né consulenza finanziaria. I dati possono essere ritardati; gli orari di mercato sono indicativi.'+
+  '</div></div>';
+}
 
 function rotationHTML(){
   const r = DATA.rotation;

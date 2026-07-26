@@ -47,6 +47,13 @@ INDICES = [
     {"name": "Nasdaq", "symbol": "^IXIC", "etf": "QQQ", "stooq": "^ndq"},
 ]
 
+# Indici europei (analisi compatta, solo Yahoo)
+EUROPE = [
+    {"name": "FTSE MIB", "symbol": "FTSEMIB.MI"},
+    {"name": "DAX", "symbol": "^GDAXI"},
+    {"name": "Euro Stoxx 50", "symbol": "^STOXX50E"},
+]
+
 
 def fetch_chart_yahoo(symbol: str, rng: str = "2y", interval: str = "1d") -> Optional[Dict]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
@@ -317,6 +324,52 @@ def fetch_sectors() -> List[Dict]:
     return out
 
 
+def fetch_europe() -> List[Dict]:
+    """Analisi (compatta) degli indici europei principali."""
+    out = []
+    for spec in EUROPE:
+        chart = fetch_chart_yahoo(spec["symbol"])
+        if chart is None:
+            print(f"  Europa: {spec['name']} non disponibile")
+            continue
+        ath = fetch_ath(spec["symbol"])
+        out.append(analysis.build_index_analysis(
+            spec["name"], spec["symbol"], chart["dates"], chart["open"],
+            chart["high"], chart["low"], chart["close"], chart["volume"],
+            fundamentals=None, ath=ath, news=[]))
+        time.sleep(0.4)
+    return out
+
+
+def fetch_vix() -> Optional[Dict]:
+    """Indice VIX (volatilità/paura) con livello, variazione e interpretazione."""
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX"
+    try:
+        r = SESSION.get(url, params={"range": "3mo", "interval": "1d"}, timeout=20)
+        if r.status_code != 200:
+            return None
+        res = r.json()["chart"]["result"][0]
+        closes = [c for c in res["indicators"]["quote"][0]["close"] if c is not None]
+        if len(closes) < 2:
+            return None
+        level = closes[-1]
+        change = (level / closes[-2] - 1) * 100
+        if level < 15:
+            label, desc = "Calma", "Bassa volatilità attesa: mercato tranquillo (a volte compiacente)."
+        elif level < 20:
+            label, desc = "Normale", "Volatilità nella norma."
+        elif level < 30:
+            label, desc = "Nervosismo", "Tensione in aumento: gli investitori si coprono."
+        else:
+            label, desc = "Paura", "Stress elevato: forte avversione al rischio."
+        return {"level": round(level, 2), "change_pct": round(change, 2),
+                "label": label, "desc": desc,
+                "sparkline": [round(c, 2) for c in closes[-40:]]}
+    except Exception as e:  # noqa: BLE001
+        print(f"  VIX non disponibile: {e}")
+        return None
+
+
 def build() -> Dict:
     indices_out: List[Dict] = []
     source = "Yahoo Finance"
@@ -354,6 +407,11 @@ def build() -> Dict:
     sectors = fetch_sectors()
     rotation = analysis.build_rotation(sectors)
 
+    print("Scarico indici europei...")
+    europe = fetch_europe()
+    print("Scarico VIX...")
+    vix = fetch_vix()
+
     market = analysis.market_summary(indices_out)
     market["news_market"] = market_news
     market["news_research"] = research_news
@@ -365,6 +423,8 @@ def build() -> Dict:
         "demo": False,
         "market": market,
         "indices": indices_out,
+        "europe": europe,
+        "vix": vix,
         "rotation": rotation,
     }
 

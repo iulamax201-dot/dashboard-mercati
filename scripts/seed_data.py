@@ -118,12 +118,29 @@ def main():
         {"name":"Investing.com Italia","url":"https://it.investing.com/"},
     ]
 
+    # indici europei demo
+    europe = []
+    for j,(nm,symb,base) in enumerate([("FTSE MIB","FTSEMIB.MI",34000),("DAX","^GDAXI",18500),("Euro Stoxx 50","^STOXX50E",4900)]):
+        spec={"name":nm,"symbol":symb,"start":base,"drift":0.0003,"vol":0.01,"etf":""}
+        dates,o,h,l,c,v = gen_series(spec, seed=j+30)
+        europe.append(analysis.build_index_analysis(nm,symb,dates,o,h,l,c,v,
+            fundamentals=None, ath=max(c)*random.uniform(1.0,1.06), news=[]))
+
+    # VIX demo
+    vlev=round(random.uniform(12,26),2)
+    vix={"level":vlev,"change_pct":round(random.uniform(-8,8),2),
+         "label":"Calma" if vlev<15 else "Normale" if vlev<20 else "Nervosismo" if vlev<30 else "Paura",
+         "desc":"Valore dimostrativo del VIX.",
+         "sparkline":[round(vlev*(1+random.uniform(-0.15,0.15)),2) for _ in range(40)]}
+
     data = {
         "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "source": "Dati dimostrativi (sintetici)",
         "demo": True,
         "market": market,
         "indices": indices_out,
+        "europe": europe,
+        "vix": vix,
         "rotation": rotation,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

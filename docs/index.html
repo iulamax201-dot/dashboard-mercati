@@ -260,11 +260,13 @@ function render(mode){
   DATA.indices.forEach((ix,i)=> h += '<div class="tab'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+ix.name+'</div>');
   h += '</div><div id="detail"></div>';
 
+  h += futuresHTML();
   h += rotationHTML();
   h += marketNewsHTML();
 
   document.getElementById('app').innerHTML = h;
-  DATA.indices.forEach((ix,i)=>buildSpark('sp-'+i, ix));
+  DATA.indices.forEach((ix,i)=>buildSparkData(document.getElementById('sp-'+i), ix.series.close.slice(-40), ix.change_pct>=0));
+  if(DATA.futures) DATA.futures.forEach((x,i)=>buildSparkData(document.getElementById('fs-'+i), x.sparkline, x.change_pct>=0));
   renderDetail();
   motion(mode);
 }
@@ -381,6 +383,24 @@ function ret(l,v){return '<div class="c"><div class="n '+cls(v)+' tnum">'+pct(v)
 function lvl(n,t){return '<div class="lvl"><div class="n tnum">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
 function newsHTML(n){return '<div class="it"><div class="h">'+n.title+'</div><div class="m">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';}
 
+function futuresHTML(){
+  const f = DATA.futures;
+  if(!f || !f.length) return '';
+  let h = '<div class="sec-h">Futures sugli indici</div>';
+  h += '<div class="note" style="margin-top:6px">I futures trattano quasi 24 ore su 24, dalla domenica sera al venerdì, e danno una prima indicazione sull\'apertura di Wall Street: utili nel weekend e prima dell\'apertura. (Il sabato e nella prima parte della domenica sono fermi.)</div>';
+  h += '<div class="grid quotes" style="margin-top:6px">';
+  f.forEach((x,i)=>{
+    h += '<div class="quote" style="cursor:default">'+
+      '<canvas class="spark" id="fs-'+i+'"></canvas>'+
+      '<div class="nm">'+x.name+'</div><div class="sym">'+x.symbol+'</div>'+
+      '<div class="px tnum">'+fmt(x.price)+'</div>'+
+      '<div class="chg '+cls(x.change_pct)+' tnum">'+pct(x.change_pct)+'</div>'+
+      '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
 function rotationHTML(){
   const r = DATA.rotation;
   if(!r || !r.sectors || !r.sectors.length) return '';
@@ -472,12 +492,11 @@ function buildDetailCharts(ix){
   ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10}}}}})});
 }
 
-function buildSpark(id,ix){
-  const el=document.getElementById(id); if(!el)return;
-  const data=ix.series.close.slice(-40);
+function buildSparkData(el,data,up){
+  if(!el || !data || !data.length)return;
   new Chart(el,{type:'line',data:{labels:data.map((_,i)=>i),datasets:[{data,
-    borderColor:ix.change_pct>=0?UP:DOWN,borderWidth:1.4,pointRadius:0,fill:false,tension:.2}]},
-    options:{responsive:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+    borderColor:up?UP:DOWN,borderWidth:1.4,pointRadius:0,fill:false,tension:.2}]},
+    options:{responsive:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
     scales:{x:{display:false},y:{display:false}}}});
 }
 function mk(id,cfg){const el=document.getElementById(id);if(el)new Chart(el,cfg);}

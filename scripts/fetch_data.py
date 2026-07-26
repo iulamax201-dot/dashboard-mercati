@@ -279,6 +279,42 @@ SECTORS = [
 ]
 
 
+# futures sugli indici (trattano quasi 24/7, dom sera -> ven)
+FUTURES = [
+    {"sym": "ES=F", "name": "S&P 500 · futures"},
+    {"sym": "YM=F", "name": "Dow Jones · futures"},
+    {"sym": "NQ=F", "name": "Nasdaq 100 · futures"},
+]
+
+
+def fetch_futures() -> List[Dict]:
+    out = []
+    for f in FUTURES:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{f['sym']}"
+        try:
+            r = SESSION.get(url, params={"range": "1mo", "interval": "1d"}, timeout=20)
+            if r.status_code != 200:
+                continue
+            res = r.json()["chart"]["result"][0]
+            meta = res.get("meta", {})
+            closes = [c for c in res["indicators"]["quote"][0]["close"] if c is not None]
+            price = meta.get("regularMarketPrice") or (closes[-1] if closes else None)
+            prev = meta.get("chartPreviousClose") or meta.get("previousClose") \
+                or (closes[-2] if len(closes) > 1 else price)
+            if price is None or not prev:
+                continue
+            out.append({
+                "symbol": f["sym"], "name": f["name"],
+                "price": round(price, 2),
+                "change_pct": round((price / prev - 1) * 100, 2),
+                "sparkline": [round(c, 2) for c in closes[-40:]],
+            })
+        except Exception as e:  # noqa: BLE001
+            print(f"  Futures {f['sym']} non disponibili: {e}")
+        time.sleep(0.25)
+    return out
+
+
 def fetch_closes(symbol: str, rng: str = "6mo") -> Optional[List[float]]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
     try:
@@ -354,6 +390,10 @@ def build() -> Dict:
     sectors = fetch_sectors()
     rotation = analysis.build_rotation(sectors)
 
+    # futures sugli indici (weekend / pre-apertura)
+    print("Scarico futures sugli indici...")
+    futures = fetch_futures()
+
     market = analysis.market_summary(indices_out)
     market["news_market"] = market_news
     market["news_research"] = research_news
@@ -366,6 +406,7 @@ def build() -> Dict:
         "market": market,
         "indices": indices_out,
         "rotation": rotation,
+        "futures": futures,
     }
 
 

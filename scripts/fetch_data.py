@@ -298,6 +298,8 @@ def fetch_futures() -> List[Dict]:
             res = r.json()["chart"]["result"][0]
             meta = res.get("meta", {})
             closes = [c for c in res["indicators"]["quote"][0]["close"] if c is not None]
+            ts = res.get("timestamp") or []
+            as_of = dt.datetime.utcfromtimestamp(ts[-1]).strftime("%Y-%m-%d") if ts else None
             price = meta.get("regularMarketPrice") or (closes[-1] if closes else None)
             # variazione rispetto all'ULTIMA chiusura (non a inizio serie):
             # previousClose e' la chiusura precedente; in mancanza, la penultima
@@ -311,6 +313,7 @@ def fetch_futures() -> List[Dict]:
                 "symbol": f["sym"], "name": f["name"],
                 "price": round(price, 2),
                 "change_pct": round((price / prev - 1) * 100, 2),
+                "as_of": as_of,
                 "sparkline": [round(c, 2) for c in closes[-40:]],
             })
         except Exception as e:  # noqa: BLE001

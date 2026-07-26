@@ -387,14 +387,15 @@ function futuresHTML(){
   const f = DATA.futures;
   if(!f || !f.length) return '';
   let h = '<div class="sec-h">Futures sugli indici</div>';
-  h += '<div class="note" style="margin-top:6px">I futures trattano quasi 24 ore su 24, dalla domenica sera al venerdì, e danno una prima indicazione sull\'apertura di Wall Street: utili nel weekend e prima dell\'apertura. (Il sabato e nella prima parte della domenica sono fermi.)</div>';
+  h += '<div class="note" style="margin-top:6px">I futures trattano quasi 24 ore su 24, dalla domenica sera al venerdì, e anticipano l\'apertura di Wall Street. La variazione indicata è quella dell\'<b>ultima seduta chiusa</b> (non un movimento del weekend: sabato e prima parte della domenica sono fermi).</div>';
   h += '<div class="grid quotes" style="margin-top:6px">';
   f.forEach((x,i)=>{
     h += '<div class="quote" style="cursor:default">'+
       '<canvas class="spark" id="fs-'+i+'"></canvas>'+
       '<div class="nm">'+x.name+'</div><div class="sym">'+x.symbol+'</div>'+
       '<div class="px tnum">'+fmt(x.price)+'</div>'+
-      '<div class="chg '+cls(x.change_pct)+' tnum">'+pct(x.change_pct)+'</div>'+
+      '<div class="chg '+cls(x.change_pct)+' tnum">'+pct(x.change_pct)+
+        ' <span style="font-size:11px;color:var(--muted);font-weight:400">ultima seduta'+(x.as_of?' · '+x.as_of:'')+'</span></div>'+
       '</div>';
   });
   h += '</div>';

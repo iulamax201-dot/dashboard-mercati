@@ -124,7 +124,7 @@ def main():
         chg=round(random.uniform(-1.2,1.2),2)
         spark=[round(base*(1+random.uniform(-0.02,0.02)),2) for _ in range(40)]
         futures.append({"symbol":sym,"name":nm,"price":round(base*(1+chg/100),2),
-            "change_pct":chg,"sparkline":spark})
+            "change_pct":chg,"as_of":dt.date.today().isoformat(),"sparkline":spark})
 
     data = {
         "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(),

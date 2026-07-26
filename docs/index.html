@@ -260,13 +260,11 @@ function render(mode){
   DATA.indices.forEach((ix,i)=> h += '<div class="tab'+(i===CURRENT?' active':'')+'" onclick="select('+i+')">'+ix.name+'</div>');
   h += '</div><div id="detail"></div>';
 
-  h += futuresHTML();
   h += rotationHTML();
   h += marketNewsHTML();
 
   document.getElementById('app').innerHTML = h;
   DATA.indices.forEach((ix,i)=>buildSparkData(document.getElementById('sp-'+i), ix.series.close.slice(-40), ix.change_pct>=0));
-  if(DATA.futures) DATA.futures.forEach((x,i)=>buildSparkData(document.getElementById('fs-'+i), x.sparkline, x.change_pct>=0));
   renderDetail();
   motion(mode);
 }
@@ -382,25 +380,6 @@ function row(k,v){return '<div class="r"><span class="k">'+k+'</span><span class
 function ret(l,v){return '<div class="c"><div class="n '+cls(v)+' tnum">'+pct(v)+'</div><div class="l">'+l+'</div></div>';}
 function lvl(n,t){return '<div class="lvl"><div class="n tnum">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
 function newsHTML(n){return '<div class="it"><div class="h">'+n.title+'</div><div class="m">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';}
-
-function futuresHTML(){
-  const f = DATA.futures;
-  if(!f || !f.length) return '';
-  let h = '<div class="sec-h">Futures sugli indici</div>';
-  h += '<div class="note" style="margin-top:6px">I futures trattano quasi 24 ore su 24, dalla domenica sera al venerdì, e anticipano l\'apertura di Wall Street. La variazione indicata è quella dell\'<b>ultima seduta chiusa</b> (non un movimento del weekend: sabato e prima parte della domenica sono fermi).</div>';
-  h += '<div class="grid quotes" style="margin-top:6px">';
-  f.forEach((x,i)=>{
-    h += '<div class="quote" style="cursor:default">'+
-      '<canvas class="spark" id="fs-'+i+'"></canvas>'+
-      '<div class="nm">'+x.name+'</div><div class="sym">'+x.symbol+'</div>'+
-      '<div class="px tnum">'+fmt(x.price)+'</div>'+
-      '<div class="chg '+cls(x.change_pct)+' tnum">'+pct(x.change_pct)+
-        ' <span style="font-size:11px;color:var(--muted);font-weight:400">ultima seduta'+(x.as_of?' · '+x.as_of:'')+'</span></div>'+
-      '</div>';
-  });
-  h += '</div>';
-  return h;
-}
 
 function rotationHTML(){
   const r = DATA.rotation;

@@ -138,3 +138,20 @@ def max_drawdown_from_high(values: List[float]) -> float:
     if peak == 0:
         return 0.0
     return (values[-1] / peak - 1) * 100
+
+
+def max_drawdown(values: List[float]) -> float:
+    """Massimo drawdown del periodo: la peggior discesa picco-minimo
+    (valore piu' negativo), in percentuale."""
+    if len(values) < 2:
+        return 0.0
+    peak = values[0]
+    mdd = 0.0
+    for v in values:
+        if v > peak:
+            peak = v
+        if peak:
+            dd = (v / peak - 1) * 100
+            if dd < mdd:
+                mdd = dd
+    return mdd

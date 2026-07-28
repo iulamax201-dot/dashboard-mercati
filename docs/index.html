@@ -406,6 +406,7 @@ function renderDetail(){
     row('Tendenza di lungo', t.golden_cross?'<span class="up">Golden cross</span>':'<span class="down">Death cross</span>')+
     row('Massimo storico', fmt(ix.ath))+
     row('Dai massimi storici', '<span class="'+cls(ix.pct_from_ath)+'">'+(ix.at_ath?'ai massimi':pct(ix.pct_from_ath))+'</span>')+
+    row('Max drawdown (1 anno)', '<span class="down">'+pct(t.max_drawdown_1y)+'</span>')+
     row('Rischio correzione', '<b style="color:'+(ix.correction_risk>=55?DOWN:ix.correction_risk>=28?GOLD:UP)+'">'+ix.correction_risk_label+'</b>')+
     '</div>'+
     '<div class="rets">'+ret('1 sett.',ix.returns.w1)+ret('1 mese',ix.returns.m1)+ret('3 mesi',ix.returns.m3)+ret('6 mesi',ix.returns.m6)+ret('1 anno',ix.returns.y1)+'</div>'+

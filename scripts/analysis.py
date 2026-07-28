@@ -52,6 +52,7 @@ def build_index_analysis(
     high_52 = max(closes[-252:]) if closes else price
     low_52 = min(closes[-252:]) if closes else price
     drawdown = ind.max_drawdown_from_high(closes[-252:])
+    max_dd_1y = ind.max_drawdown(closes[-252:])   # peggior discesa nell'anno
 
     ret_1w = ind.pct_return(closes, 5)
     ret_1m = ind.pct_return(closes, 21)
@@ -234,6 +235,7 @@ def build_index_analysis(
             "low_52w": round(low_52, 2),
             "pct_from_high_52w": round((price / high_52 - 1) * 100, 2) if high_52 else 0,
             "drawdown": round(drawdown, 2),
+            "max_drawdown_1y": round(max_dd_1y, 2),
         },
         "returns": {
             "w1": _r(ret_1w), "m1": _r(ret_1m), "m3": _r(ret_3m),

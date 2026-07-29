@@ -117,6 +117,13 @@
   .ob .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:3px}
   .ob.confirm .lab{color:var(--up)} .ob.change .lab{color:var(--gold)}
   .ob p{margin:0;font-size:14px;color:var(--txt2)}
+  .act{border:1px solid var(--rule);border-left-width:3px;padding:11px 13px;margin:12px 0}
+  .act-pos{border-left-color:var(--up)} .act-warn{border-left-color:var(--gold)} .act-neg{border-left-color:var(--down)}
+  .act .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:3px}
+  .act .stance{font-family:Georgia,serif;font-weight:700;font-size:17px}
+  .act-pos .stance{color:var(--up)} .act-warn .stance{color:var(--gold)} .act-neg .stance{color:var(--down)}
+  .act p{margin:5px 0 0;font-size:13.5px;color:var(--txt2)}
+  .act .micro{font-size:10.5px;color:var(--muted);margin-top:7px;font-style:italic}
   .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:12px;border:1px solid var(--rule)}
   .lvl{padding:10px;text-align:center;border-right:1px solid var(--rule)}
   .lvl:last-child{border-right:none}
@@ -392,6 +399,9 @@ function renderDetail(){
   h += '<div class="panel"><div class="sub-h">Outlook — cosa può confermare o cambiare il trend</div>'+
     '<div class="serif" style="font-size:20px;font-weight:700;color:'+vc+'">'+ix.verdict+
       ' <span style="font-size:12px;color:var(--muted);font-family:inherit">forza '+fmt(ix.score)+'/100</span></div>'+
+    (ix.action?('<div class="act act-'+ix.action.level+'"><div class="lab">Quando comprare o meno</div>'+
+      '<div class="stance">'+ix.action.stance+'</div><p>'+ix.action.text+'</p>'+
+      '<div class="micro">Indicazione automatica dagli indicatori, non è consulenza finanziaria.</div></div>'):'')+
     '<div class="ob confirm"><div class="lab">Cosa conferma il trend</div><p>'+o.confirm+'</p></div>'+
     '<div class="ob change"><div class="lab">Cosa lo cambierebbe</div><p>'+o.change+'</p></div>'+
     (o.note?'<div class="ob"><div class="lab" style="color:var(--gold)">Nota di breve</div><p>'+o.note+'</p></div>':'')+

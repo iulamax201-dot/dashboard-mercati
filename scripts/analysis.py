@@ -200,6 +200,7 @@ def build_index_analysis(
     # ---------- OUTLOOK: cosa conferma / cambia il trend ----------
     outlook = _build_outlook(verdict, price, v_sma50, v_sma200, v_rsi,
                              high_52, low_52)
+    action = _build_action(verdict, v_rsi, pct_from_ath, risk)
 
     # storico per i grafici (fino a ~2 anni, per il selettore di orizzonte)
     hist_len = min(len(closes), 520)
@@ -221,6 +222,7 @@ def build_index_analysis(
         "pct_from_ath": round(pct_from_ath, 2),
         "at_ath": at_ath,
         "outlook": outlook,
+        "action": action,
         "news": news or [],
         "technical": {
             "rsi": _r(v_rsi),
@@ -256,6 +258,41 @@ def build_index_analysis(
             "macd_hist": [_r(x, 3) for x in hist[s:]],
         },
     }
+
+
+def _build_action(verdict, rsi, pct_from_ath, corr_risk) -> Dict:
+    """Indicazione operativa sintetica: quando ha (forse) senso comprare o no.
+    Euristica da trend, RSI, vicinanza ai massimi e rischio correzione.
+    NON e' consulenza finanziaria."""
+    if verdict == "Bullish":
+        if rsi is not None and rsi >= 70:
+            return {"stance": "Comprare con cautela", "level": "warn",
+                    "text": "Trend positivo ma ipercomprato (RSI alto): meglio non inseguire "
+                    "il rialzo e attendere un ritracciamento verso la media a 50 giorni "
+                    "prima di aumentare l'esposizione."}
+        if pct_from_ath is not None and pct_from_ath >= -1:
+            return {"stance": "Comprare con cautela", "level": "warn",
+                    "text": "Trend positivo ma sui massimi storici: poco margine e possibili "
+                    "prese di profitto; ingressi piu' sensati sulle correzioni."}
+        if corr_risk >= 55:
+            return {"stance": "Comprare con cautela", "level": "warn",
+                    "text": "Trend positivo ma rischio di correzione elevato: valutare ingressi "
+                    "scaglionati e attendere un raffreddamento degli eccessi."}
+        return {"stance": "Impostazione favorevole", "level": "pos",
+                "text": "Trend costruttivo e senza eccessi evidenti: contesto tendenzialmente "
+                "favorevole; ingressi preferibili sulle debolezze, verso le medie mobili."}
+    if verdict == "Bearish":
+        if rsi is not None and rsi <= 30:
+            return {"stance": "Solo rimbalzo tecnico", "level": "warn",
+                    "text": "Trend debole ma ipervenduto: possibile rimbalzo di breve, non "
+                    "un'inversione; eventuali acquisti solo speculativi e con stop stretti."}
+        return {"stance": "Meglio attendere", "level": "neg",
+                "text": "Trend debole/ribassista: preferibile evitare nuovi acquisti finche' non "
+                "compaiono segnali di inversione (recupero delle medie a 50 e 200 giorni)."}
+    return {"stance": "Attendere conferma", "level": "warn",
+            "text": "Fase laterale/incerta: conviene attendere una direzione chiara — rottura "
+            "sopra i massimi recenti come segnale di forza, cedimento della media a 200 "
+            "giorni come segnale di prudenza."}
 
 
 def _build_outlook(verdict, price, sma50, sma200, rsi, high_52, low_52) -> Dict:

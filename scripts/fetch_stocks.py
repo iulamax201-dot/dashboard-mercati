@@ -40,8 +40,10 @@ SESSION, CRUMB = make_session()
 STOCKS = [
     {"name": "Nvidia", "ticker": "NVDA", "symbol": "NVDA", "theme": "Tech · AI / Semiconduttori"},
     {"name": "Microsoft", "ticker": "MSFT", "symbol": "MSFT", "theme": "Tech · AI / Cloud"},
+    {"name": "Oracle", "ticker": "ORCL", "symbol": "ORCL", "theme": "Tech · AI / Cloud / Database"},
     {"name": "Apple", "ticker": "AAPL", "symbol": "AAPL", "theme": "Tech · Consumer tech"},
     {"name": "ASML", "ticker": "ASML", "symbol": "ASML", "theme": "Tech · Semiconduttori"},
+    {"name": "SK Hynix", "ticker": "000660.KS", "symbol": "000660.KS", "theme": "Tech · AI / Semiconduttori (memorie)"},
     {"name": "JPMorgan", "ticker": "JPM", "symbol": "JPM", "theme": "Finanza · Banche"},
     {"name": "Intesa Sanpaolo", "ticker": "ISP.MI", "symbol": "ISP.MI", "theme": "Finanza · Banche (Italia)"},
     {"name": "Eli Lilly", "ticker": "LLY", "symbol": "LLY", "theme": "Salute · Farmaceutica"},

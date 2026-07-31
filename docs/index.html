@@ -423,6 +423,8 @@ function renderDetail(){
     '</div>';
   h += '</div>';
 
+  h += historyHTML(ix);   // stagionalità + backtest
+
   // NEWS indice
   h += '<div class="panel" style="margin-top:14px"><div class="sub-h">Notizie recenti — '+ix.name+'</div>'+
     '<div class="news">';
@@ -438,6 +440,37 @@ function row(k,v){return '<div class="r"><span class="k">'+k+'</span><span class
 function ret(l,v){return '<div class="c"><div class="n '+cls(v)+' tnum">'+pct(v)+'</div><div class="l">'+l+'</div></div>';}
 function lvl(n,t){return '<div class="lvl"><div class="n tnum">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
 function newsHTML(n){return '<div class="it"><div class="h">'+n.title+'</div><div class="m">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';}
+
+function historyHTML(ix){
+  const st=ix.stats; if(!st) return '';
+  const se=st.seasonality, bt=st.backtest;
+  if(!se && !bt) return '';
+  let h='<div class="grid two" style="margin-top:14px">';
+  if(se){
+    h+='<div class="panel"><div class="sub-h">Stagionalità</div>'+
+      '<div class="note">Rendimento storico medio per mese (ultimi ~'+se.years+' anni). Il mese in corso è evidenziato.</div>'+
+      '<div style="font-size:14px;margin-bottom:10px">Storicamente <b>'+se.month_name+'</b> ha reso in media '+
+        '<b class="'+cls(se.avg)+'">'+pct(se.avg)+'</b> su '+ix.name+', positivo nel <b>'+se.pos_rate+'%</b> degli anni.</div>'+
+      '<div class="chart-box sm"><canvas id="c-seas"></canvas></div>'+
+      '<div class="note" style="margin-top:6px;font-size:11px">La stagionalità è una tendenza statistica, non una garanzia.</div></div>';
+  }
+  if(bt){
+    const A=bt.above, B=bt.below;
+    let comment='';
+    if(A&&B) comment = A.avg>B.avg
+      ? 'Storicamente restare sopra la media a 200 giorni ha reso più che starne sotto: la regola di trend ha avuto senso su questo indice.'
+      : 'In questo campione la regola non ha dato un vantaggio netto: interpretare con prudenza.';
+    h+='<div class="panel"><div class="sub-h">Backtest · regola di trend</div>'+
+      '<div class="note">Rendimento medio nei ~'+bt.fwd_days+' giorni di borsa successivi, a seconda che il prezzo fosse sopra o sotto la media a 200 giorni (ultimi ~10 anni).</div>'+
+      '<div class="dl">'+
+        (A?('<div class="r"><span class="k">Prezzo <span class="up">sopra</span> SMA200</span><span class="v"><span class="'+cls(A.avg)+'">'+pct(A.avg)+'</span> &nbsp;·&nbsp; '+A.pos_rate+'% positivi</span></div>'):'')+
+        (B?('<div class="r"><span class="k">Prezzo <span class="down">sotto</span> SMA200</span><span class="v"><span class="'+cls(B.avg)+'">'+pct(B.avg)+'</span> &nbsp;·&nbsp; '+B.pos_rate+'% positivi</span></div>'):'')+
+        ((A||B)?('<div class="r"><span class="k">Campioni analizzati</span><span class="v">'+((A?A.n:0)+(B?B.n:0))+' giorni</span></div>'):'')+
+      '</div>'+
+      '<div class="note" style="margin-top:8px">'+comment+' Risultati passati, non indicativi di quelli futuri.</div></div>';
+  }
+  h+='</div>'; return h;
+}
 
 function marketOpen(zone){
   const now=new Date(), day=now.getUTCDay(), h=now.getUTCHours()+now.getUTCMinutes()/60;
@@ -602,6 +635,20 @@ function buildDetailCharts(ix){
     {type:'line',data:s.macd,borderColor:'#7ea6d0',borderWidth:1.3,pointRadius:0,tension:.1},
     {type:'line',data:s.macd_signal,borderColor:GOLD,borderWidth:1.3,pointRadius:0,tension:.1},
   ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10}}}}})});
+
+  if(ix.stats && ix.stats.seasonality) buildSeasonality(ix.stats.seasonality);
+}
+
+function buildSeasonality(se){
+  const el=document.getElementById('c-seas'); if(!el)return;
+  const ma=(se.monthly_avg||[]).map(v=>v==null?0:v);
+  const labels=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const cols=ma.map((v,i)=> (i+1===se.month)?GOLD:(v>=0?'rgba(75,184,119,.55)':'rgba(226,106,95,.55)'));
+  new Chart(el,{type:'bar',data:{labels,datasets:[{data:ma,backgroundColor:cols,borderWidth:0}]},
+    options:baseOpts({plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>(c.raw>=0?'+':'')+c.raw+'%'}}},
+      scales:{x:{grid:{display:false},ticks:{color:cssv('--tick'),font:{size:10}}},
+              y:{grid:{color:cssv('--grid')},ticks:{color:cssv('--tick'),font:{size:10},callback:v=>v+'%'}}}})});
 }
 
 function buildSparkData(el,data,up){

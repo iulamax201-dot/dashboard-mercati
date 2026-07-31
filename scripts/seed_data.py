@@ -78,12 +78,14 @@ def main():
              "publisher": "Demo", "link": "",
              "date": dt.date.today().isoformat() + " 08:30"},
         ]
-        indices_out.append(
-            analysis.build_index_analysis(
-                spec["name"], spec["symbol"], dates, o, h, l, c, v,
-                fundamentals=fund, ath=ath, news=news,
-            )
+        idx = analysis.build_index_analysis(
+            spec["name"], spec["symbol"], dates, o, h, l, c, v,
+            fundamentals=fund, ath=ath, news=news,
         )
+        # storico lungo sintetico (~10 anni) per stagionalità e backtest demo
+        ld, _, _, _, lc, _ = gen_series(spec, n=2600, seed=i + 50)
+        idx["stats"] = analysis.build_stats(ld, lc)
+        indices_out.append(idx)
 
     # settori demo per la rotazione
     demo_sectors = []

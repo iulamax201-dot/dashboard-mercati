@@ -244,6 +244,29 @@ def fetch_google_news(query: str, count: int = 6) -> List[Dict]:
         return []
 
 
+def fetch_history(symbol: str) -> Optional[Dict]:
+    """Storico lungo (fino a ~10 anni, giornaliero) per stagionalità e backtest."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    try:
+        r = SESSION.get(url, params={"range": "10y", "interval": "1d"}, timeout=25)
+        if r.status_code != 200:
+            return None
+        res = r.json()["chart"]["result"][0]
+        ts = res["timestamp"]
+        cl = res["indicators"]["quote"][0]["close"]
+        dates, closes = [], []
+        for t, c in zip(ts, cl):
+            if c is None:
+                continue
+            dates.append(dt.datetime.utcfromtimestamp(t).strftime("%Y-%m-%d"))
+            closes.append(float(c))
+        if len(closes) > 260:
+            return {"dates": dates, "close": closes}
+    except Exception as e:  # noqa: BLE001
+        print(f"  Storico lungo {symbol} non disponibile: {e}")
+    return None
+
+
 def fetch_news(symbol: str, count: int = 5) -> List[Dict]:
     """Notizie recenti collegate all'indice (Google News, italiano)."""
     q = NEWS_QUERY.get(symbol, symbol)
@@ -386,14 +409,16 @@ def build() -> Dict:
         fund = fetch_fundamentals(spec["etf"])
         ath = fetch_ath(spec["symbol"])
         news = fetch_news(spec["symbol"])
-        indices_out.append(
-            analysis.build_index_analysis(
-                spec["name"], spec["symbol"],
-                chart["dates"], chart["open"], chart["high"],
-                chart["low"], chart["close"], chart["volume"],
-                fundamentals=fund, ath=ath, news=news,
-            )
+        idx = analysis.build_index_analysis(
+            spec["name"], spec["symbol"],
+            chart["dates"], chart["open"], chart["high"],
+            chart["low"], chart["close"], chart["volume"],
+            fundamentals=fund, ath=ath, news=news,
         )
+        hist = fetch_history(spec["symbol"])
+        if hist:
+            idx["stats"] = analysis.build_stats(hist["dates"], hist["close"])
+        indices_out.append(idx)
         time.sleep(0.5)
 
     # notizie di mercato (italiane) e ricerca istituzionale (GS/JPM/Fidelity)

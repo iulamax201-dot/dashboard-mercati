@@ -401,6 +401,70 @@ def build_rotation(sectors: List[Dict]) -> Dict:
     }
 
 
+MESI = ["", "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+        "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+
+
+def build_stats(dates: List[str], closes: List[float]) -> Dict:
+    """Statistiche storiche: stagionalità mensile e backtest della regola di
+    trend (prezzo sopra/sotto la media mobile a 200 giorni)."""
+    out: Dict = {}
+
+    # ---------- STAGIONALITA' ----------
+    # chiusura di fine mese -> rendimenti mensili -> media per mese
+    month_close: Dict[str, float] = {}
+    for d, c in zip(dates, closes):
+        month_close[d[:7]] = c  # 'YYYY-MM' -> ultima chiusura del mese
+    keys = sorted(month_close)
+    by_month: Dict[int, List[float]] = {m: [] for m in range(1, 13)}
+    for i in range(1, len(keys)):
+        prev, cur = month_close[keys[i - 1]], month_close[keys[i]]
+        if prev:
+            mth = int(keys[i][5:7])
+            by_month[mth].append((cur / prev - 1) * 100)
+    monthly_avg = []
+    for m in range(1, 13):
+        vals = by_month[m]
+        monthly_avg.append(round(sum(vals) / len(vals), 2) if vals else None)
+    cur_m = int(dates[-1][5:7]) if dates else 1
+    cur_vals = by_month.get(cur_m, [])
+    if cur_vals:
+        out["seasonality"] = {
+            "month": cur_m, "month_name": MESI[cur_m],
+            "avg": round(sum(cur_vals) / len(cur_vals), 2),
+            "pos_rate": round(sum(1 for v in cur_vals if v > 0) / len(cur_vals) * 100),
+            "years": len(cur_vals),
+            "monthly_avg": monthly_avg,
+        }
+
+    # ---------- BACKTEST regola di trend (prezzo vs SMA200) ----------
+    sma200 = ind.sma(closes, 200)
+    fwd = 21  # ~1 mese di borsa
+    above: List[float] = []
+    below: List[float] = []
+    for i in range(len(closes) - fwd):
+        s = sma200[i]
+        if s is None or closes[i] == 0:
+            continue
+        fr = (closes[i + fwd] / closes[i] - 1) * 100
+        (above if closes[i] > s else below).append(fr)
+
+    def stat(xs):
+        if not xs:
+            return None
+        return {"avg": round(sum(xs) / len(xs), 2),
+                "pos_rate": round(sum(1 for v in xs if v > 0) / len(xs) * 100),
+                "n": len(xs)}
+
+    a, b = stat(above), stat(below)
+    if a or b:
+        out["backtest"] = {
+            "rule": "Prezzo sopra vs sotto la media a 200 giorni",
+            "fwd_days": fwd, "above": a, "below": b,
+        }
+    return out
+
+
 def market_summary(indices: List[Dict]) -> Dict:
     """Sintesi complessiva del mercato aggregando i tre indici."""
     scores = [i["score"] for i in indices]

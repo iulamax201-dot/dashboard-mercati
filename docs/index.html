@@ -457,9 +457,9 @@ function historyHTML(ix){
   if(bt){
     const A=bt.above, B=bt.below;
     let comment='';
-    if(A&&B) comment = A.avg>B.avg
-      ? 'Storicamente restare sopra la media a 200 giorni ha reso più che starne sotto: la regola di trend ha avuto senso su questo indice.'
-      : 'In questo campione la regola non ha dato un vantaggio netto: interpretare con prudenza.';
+    if(A&&B) comment = A.pos_rate > B.pos_rate+3
+      ? 'Stare sopra la media a 200 giorni è stato storicamente più affidabile (più spesso in positivo): la regola di trend ha avuto senso su questo indice.'
+      : 'Qui la regola non ha dato un vantaggio netto: i rendimenti medi "sotto la media" sono spesso gonfiati dai forti rimbalzi post-ribasso, quindi vanno letti con prudenza.';
     h+='<div class="panel"><div class="sub-h">Backtest · regola di trend</div>'+
       '<div class="note">Rendimento medio nei ~'+bt.fwd_days+' giorni di borsa successivi, a seconda che il prezzo fosse sopra o sotto la media a 200 giorni (ultimi ~10 anni).</div>'+
       '<div class="dl">'+

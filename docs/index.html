@@ -42,6 +42,11 @@
     letter-spacing:.05em;transition:.2s}
   .theme-btn:hover{color:var(--ink);border-color:var(--muted)}
   .masthead{position:relative}
+  .nav{display:flex;gap:22px;margin:12px 0 0;font-size:13px}
+  .nav a{color:var(--muted);text-decoration:none;font-family:Georgia,serif;font-size:15px;
+    padding-bottom:3px;border-bottom:2px solid transparent}
+  .nav a.on{color:var(--ink);border-color:var(--ink);font-weight:700}
+  .nav a:hover{color:var(--ink)}
   .tf{display:flex;gap:5px;margin:2px 0 12px;flex-wrap:wrap}
   .tfb{font-size:11px;padding:3px 10px;border:1px solid var(--rule);color:var(--muted);
     cursor:pointer;letter-spacing:.03em;user-select:none;transition:.2s}
@@ -195,6 +200,10 @@
       <span>S&amp;P 500 &middot; Dow Jones &middot; Nasdaq — tendenza, massimi storici, outlook</span>
       <span id="meta"></span>
     </div>
+    <nav class="nav">
+      <a href="index.html" class="on">Indici</a>
+      <a href="titoli.html">Titoli</a>
+    </nav>
   </div>
 
   <div id="app"><div class="loading">Caricamento dati…</div></div>

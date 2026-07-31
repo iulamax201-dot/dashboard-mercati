@@ -36,15 +36,19 @@ jobs:
       - name: Scarica dati e calcola analisi
         run: python scripts/fetch_data.py
 
+      - name: Scarica titoli (seconda pagina)
+        continue-on-error: true
+        run: python scripts/fetch_stocks.py
+
       - name: Commit se ci sono aggiornamenti
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- docs/data.json; then
+          if git diff --quiet -- docs/data.json docs/stocks.json; then
             echo "Nessuna variazione nei dati."
             exit 0
           fi
-          git add docs/data.json
+          git add docs/data.json docs/stocks.json
           git commit -m "chore: aggiornamento dati mercati [skip ci]"
           # commit PRIMA di rebasare; poi integra eventuali push concorrenti
           for i in 1 2 3 4 5; do

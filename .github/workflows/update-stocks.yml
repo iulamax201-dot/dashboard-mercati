@@ -1,27 +1,26 @@
-name: Aggiorna dati mercati
+name: Aggiorna titoli (2 volte al giorno)
 
 on:
   schedule:
-    # ogni 15 minuti, su minuti "spaiati" (orario UTC) per ridurre i ritardi
-    # dello scheduler di GitHub, che è best-effort e congestionato sugli
-    # orari tondi (:00/:15/:30/:45).
-    - cron: "3,18,33,48 * * * *"
+    # due volte al giorno (orario UTC), su minuti "spaiati" per ridurre i
+    # ritardi dello scheduler di GitHub (best-effort):
+    #  - 12:20 UTC  → ~14:20 in Italia (mattina USA / metà giornata Europa)
+    #  - 21:20 UTC  → ~23:20 in Italia (dopo la chiusura di Wall Street)
+    - cron: "20 12,21 * * *"
   workflow_dispatch: {}   # avvio manuale dal tab Actions
   push:
     branches: [claude/sei-pronto-0sapn7, main]
     paths:
-      - "scripts/fetch_data.py"
-      - "scripts/analysis.py"
-      - "scripts/indicators.py"
-      - "scripts/yahoo_auth.py"
-      - "scripts/seed_data.py"
-      - ".github/workflows/update-data.yml"
+      - "scripts/fetch_stocks.py"
+      - "scripts/stock_analysis.py"
+      - "scripts/seed_stocks.py"
+      - ".github/workflows/update-stocks.yml"
 
 permissions:
   contents: write
 
 concurrency:
-  group: update-data
+  group: update-stocks
   cancel-in-progress: false
 
 jobs:
@@ -37,19 +36,19 @@ jobs:
       - name: Installa dipendenze
         run: pip install -r requirements.txt
 
-      - name: Scarica dati e calcola analisi
-        run: python scripts/fetch_data.py
+      - name: Scarica titoli e calcola analisi
+        run: python scripts/fetch_stocks.py
 
       - name: Commit se ci sono aggiornamenti
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- docs/data.json; then
-            echo "Nessuna variazione nei dati."
+          if git diff --quiet -- docs/stocks.json; then
+            echo "Nessuna variazione nei titoli."
             exit 0
           fi
-          git add docs/data.json
-          git commit -m "chore: aggiornamento dati mercati [skip ci]"
+          git add docs/stocks.json
+          git commit -m "chore: aggiornamento titoli [skip ci]"
           # commit PRIMA di rebasare; poi integra eventuali push concorrenti
           for i in 1 2 3 4 5; do
             if git pull --rebase origin "$GITHUB_REF_NAME" && git push; then

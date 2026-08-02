@@ -25,6 +25,7 @@ SEEDS = [
     {"name": "Nvidia", "ticker": "NVDA", "cur": "USD", "mkt": "NasdaqGS", "theme": "Tech · AI / Semiconduttori", "start": 118, "drift": 0.0011, "vol": 0.028},
     {"name": "Microsoft", "ticker": "MSFT", "cur": "USD", "mkt": "NasdaqGS", "theme": "Tech · AI / Cloud", "start": 430, "drift": 0.0006, "vol": 0.015},
     {"name": "Oracle", "ticker": "ORCL", "cur": "USD", "mkt": "NYSE", "theme": "Tech · AI / Cloud / Database", "start": 185, "drift": 0.0009, "vol": 0.019},
+    {"name": "Adobe", "ticker": "ADBE", "cur": "USD", "mkt": "NasdaqGS", "theme": "Tech · Software / Creatività", "start": 480, "drift": 0.0004, "vol": 0.017},
     {"name": "Apple", "ticker": "AAPL", "cur": "USD", "mkt": "NasdaqGS", "theme": "Tech · Consumer tech", "start": 215, "drift": 0.0004, "vol": 0.016},
     {"name": "ASML", "ticker": "ASML", "cur": "USD", "mkt": "NasdaqGS", "theme": "Tech · Semiconduttori", "start": 720, "drift": 0.0007, "vol": 0.022},
     {"name": "SK Hynix", "ticker": "000660.KS", "cur": "KRW", "mkt": "Seoul", "theme": "Tech · AI / Semiconduttori (memorie)", "start": 205000, "drift": 0.0011, "vol": 0.024},

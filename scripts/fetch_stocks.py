@@ -41,6 +41,7 @@ STOCKS = [
     {"name": "Nvidia", "ticker": "NVDA", "symbol": "NVDA", "theme": "Tech · AI / Semiconduttori"},
     {"name": "Microsoft", "ticker": "MSFT", "symbol": "MSFT", "theme": "Tech · AI / Cloud"},
     {"name": "Oracle", "ticker": "ORCL", "symbol": "ORCL", "theme": "Tech · AI / Cloud / Database"},
+    {"name": "Adobe", "ticker": "ADBE", "symbol": "ADBE", "theme": "Tech · Software / Creatività"},
     {"name": "Apple", "ticker": "AAPL", "symbol": "AAPL", "theme": "Tech · Consumer tech"},
     {"name": "ASML", "ticker": "ASML", "symbol": "ASML", "theme": "Tech · Semiconduttori"},
     {"name": "SK Hynix", "ticker": "000660.KS", "symbol": "000660.KS", "theme": "Tech · AI / Semiconduttori (memorie)"},

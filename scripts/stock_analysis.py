@@ -87,6 +87,47 @@ def _stock_action(verdict: str, rsi: Optional[float], fair: Dict) -> Dict:
             "prezzo e medie mobili prima di muoversi."}
 
 
+def _trend_block(raw: Optional[Dict], currency: str) -> Optional[Dict]:
+    """Compone la descrizione in italiano della struttura del trend."""
+    if not raw:
+        return None
+    sup, res = raw["support"], raw["resistance"]
+    trend = raw["trend"]
+    if trend == "up":
+        label, bias, level = "Massimi e minimi crescenti", "Rialzista", "pos"
+        text = (f"Struttura rialzista: la sequenza segna massimi e minimi crescenti. "
+                f"L'impostazione resta positiva finché tiene il supporto (~{fmt_num(sup)}); "
+                f"resistenza di riferimento a ~{fmt_num(res)}.")
+    elif trend == "down":
+        label, bias, level = "Massimi e minimi decrescenti", "Ribassista", "neg"
+        text = (f"Struttura ribassista: massimi e minimi decrescenti. Serve superare la "
+                f"resistenza (~{fmt_num(res)}) per invertire; sotto il supporto (~{fmt_num(sup)}) "
+                f"la debolezza si aggrava.")
+    else:
+        label, bias, level = "Struttura laterale / mista", "Neutrale", "warn"
+        text = (f"Nessuna sequenza netta di massimi e minimi: fase laterale/incerta. "
+                f"Rottura sopra ~{fmt_num(res)} = segnale di forza, sotto ~{fmt_num(sup)} = debolezza.")
+
+    breakout = None
+    if raw["breakout"] == "up":
+        breakout = {"dir": "up",
+                    "text": f"Breakout rialzista: nuovi massimi di periodo (sopra ~{fmt_num(raw['breakout_high'])})."}
+    elif raw["breakout"] == "down":
+        breakout = {"dir": "down",
+                    "text": f"Breakout ribassista: nuovi minimi di periodo (sotto ~{fmt_num(raw['breakout_low'])})."}
+
+    return {"label": label, "bias": bias, "level": level, "text": text,
+            "support": sup, "resistance": res, "breakout": breakout}
+
+
+def fmt_num(v: Optional[float]) -> str:
+    if v is None:
+        return "—"
+    if abs(v) >= 1000:
+        return f"{v:,.0f}".replace(",", ".")
+    return f"{v:.2f}".rstrip("0").rstrip(".") if v == int(v) else f"{v:.2f}"
+
+
 def build_stock(
     name: str,
     ticker: str,
@@ -180,6 +221,9 @@ def build_stock(
     # POC / area di valore (profilo dei volumi sull'ultimo anno)
     poc = ind.volume_profile(highs, lows, closes, volumes, lookback=252, bins=50)
 
+    # struttura del trend (swing high/low, breakout)
+    structure = _trend_block(ind.trend_structure(highs, lows, closes), currency)
+
     hist_len = min(len(closes), 520)
     s = len(closes) - hist_len
 
@@ -198,6 +242,7 @@ def build_stock(
         "action": action,
         "fair_value": fair,
         "poc": poc,
+        "structure": structure,
         "technical": {
             "rsi": _r(vrsi),
             "sma50": _r(v50),

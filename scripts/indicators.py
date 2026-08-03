@@ -211,3 +211,61 @@ def volume_profile(highs, lows, closes, volumes, lookback: int = 252,
         "va_high": round(lo + (hi_i + 1) * width, 2),
         "lookback": min(lookback, n),
     }
+
+
+def trend_structure(highs, lows, closes, k: int = 5, lookback: int = 126,
+                    breakout_win: int = 63) -> Optional[dict]:
+    """Struttura del trend basata sui punti di svolta (swing high/low).
+
+    Individua i massimi e minimi relativi (pivot confermati da `k` barre per
+    lato) e ne confronta gli ultimi due: massimi+minimi crescenti = rialzista,
+    decrescenti = ribassista, altrimenti laterale/misto. Rileva inoltre la
+    rottura (breakout) dei massimi/minimi delle ultime `breakout_win` sedute.
+    Ritorna valori grezzi; i testi in italiano sono composti a valle.
+    """
+    n = len(closes)
+    if n < max(30, 2 * k + 2):
+        return None
+    s = max(0, n - lookback)
+    sh, sl = [], []   # swing highs / lows: (indice, prezzo)
+    for i in range(max(s, k), n - k):
+        seg_h = highs[i - k:i + k + 1]
+        seg_l = lows[i - k:i + k + 1]
+        if highs[i] is not None and highs[i] == max(x for x in seg_h if x is not None):
+            sh.append((i, highs[i]))
+        if lows[i] is not None and lows[i] == min(x for x in seg_l if x is not None):
+            sl.append((i, lows[i]))
+
+    hh = sh[-1][1] > sh[-2][1] if len(sh) >= 2 else None
+    hl = sl[-1][1] > sl[-2][1] if len(sl) >= 2 else None
+    if hh and hl:
+        trend = "up"
+    elif hh is False and hl is False:
+        trend = "down"
+    else:
+        trend = "mixed"
+
+    bs = max(0, n - breakout_win)
+    prior_highs = [x for x in highs[bs:n - 1] if x is not None]
+    prior_lows = [x for x in lows[bs:n - 1] if x is not None]
+    prior_high = max(prior_highs) if prior_highs else highs[-1]
+    prior_low = min(prior_lows) if prior_lows else lows[-1]
+    close = closes[-1]
+    breakout = None
+    if close >= prior_high:
+        breakout = "up"
+    elif close <= prior_low:
+        breakout = "down"
+
+    resistance = sh[-1][1] if sh else prior_high
+    support = sl[-1][1] if sl else prior_low
+    return {
+        "trend": trend,
+        "resistance": round(resistance, 2),
+        "support": round(support, 2),
+        "breakout": breakout,
+        "breakout_high": round(prior_high, 2),
+        "breakout_low": round(prior_low, 2),
+        "n_highs": len(sh),
+        "n_lows": len(sl),
+    }

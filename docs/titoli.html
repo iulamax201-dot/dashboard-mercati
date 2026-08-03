@@ -298,6 +298,18 @@ function renderDetail(first){
   h+=fvBoxHTML(s);
   h+='<div class="act act-'+s.action.level+'"><div class="lab">Indicazione operativa</div>'+
      '<div class="stance">'+s.action.stance+'</div><p>'+s.action.text+'</p></div>';
+  // struttura del trend
+  if(s.structure){
+    const st=s.structure;
+    h+='<div class="act act-'+st.level+'"><div class="lab">Struttura del trend</div>'+
+       '<div class="stance">'+st.label+' <span style="font-size:12px;color:var(--muted)">· '+st.bias+'</span></div>'+
+       '<p>'+st.text+'</p>'+
+       (st.breakout?'<p style="font-weight:600;color:'+(st.breakout.dir==='up'?'var(--up)':'var(--down)')+'">'+st.breakout.text+'</p>':'')+
+       '<div style="display:flex;gap:20px;margin-top:8px;font-size:12px">'+
+         '<span style="color:var(--muted)">Supporto <b class="tnum" style="color:var(--ink)">'+money(st.support,cur)+'</b></span>'+
+         '<span style="color:var(--muted)">Resistenza <b class="tnum" style="color:var(--ink)">'+money(st.resistance,cur)+'</b></span>'+
+       '</div></div>';
+  }
   // returns
   const R=s.returns;
   h+='<div class="rets">'+[['1S',R.w1],['1M',R.m1],['3M',R.m3],['6M',R.m6],['1A',R.y1]]

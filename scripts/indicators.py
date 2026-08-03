@@ -155,3 +155,59 @@ def max_drawdown(values: List[float]) -> float:
             if dd < mdd:
                 mdd = dd
     return mdd
+
+
+def volume_profile(highs, lows, closes, volumes, lookback: int = 252,
+                   bins: int = 50) -> Optional[dict]:
+    """Profilo dei volumi su una finestra recente.
+
+    Ritorna il POC (Point of Control = il prezzo con il maggior volume
+    scambiato) e l'area di valore (la fascia di prezzo che contiene il ~70%
+    del volume, costruita espandendosi dal POC). Ogni barra distribuisce il
+    proprio volume in modo uniforme sui bin coperti dal suo range [low, high].
+    """
+    n = len(closes)
+    if n == 0:
+        return None
+    s = max(0, n - lookback)
+    H, L, V = highs[s:], lows[s:], volumes[s:]
+    lo = min(x for x in L if x is not None)
+    hi = max(x for x in H if x is not None)
+    if not (hi > lo):
+        return None
+    width = (hi - lo) / bins
+    prof = [0.0] * bins
+    for h, l, v in zip(H, L, V):
+        if v is None or v <= 0 or h is None or l is None:
+            continue
+        b0 = int((l - lo) / width)
+        b1 = int((h - lo) / width)
+        b0 = max(0, min(bins - 1, b0))
+        b1 = max(0, min(bins - 1, b1))
+        share = v / (b1 - b0 + 1)
+        for b in range(b0, b1 + 1):
+            prof[b] += share
+    total = sum(prof)
+    if total <= 0:
+        return None
+    poc_i = max(range(bins), key=lambda i: prof[i])
+    poc = lo + (poc_i + 0.5) * width
+    # area di valore: espandi dal POC finche' raccogli il 70% del volume
+    target = total * 0.70
+    acc = prof[poc_i]
+    lo_i = hi_i = poc_i
+    while acc < target and (lo_i > 0 or hi_i < bins - 1):
+        left = prof[lo_i - 1] if lo_i > 0 else -1.0
+        right = prof[hi_i + 1] if hi_i < bins - 1 else -1.0
+        if right >= left:
+            hi_i += 1
+            acc += prof[hi_i]
+        else:
+            lo_i -= 1
+            acc += prof[lo_i]
+    return {
+        "poc": round(poc, 2),
+        "va_low": round(lo + lo_i * width, 2),
+        "va_high": round(lo + (hi_i + 1) * width, 2),
+        "lookback": min(lookback, n),
+    }

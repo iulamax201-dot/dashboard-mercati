@@ -287,7 +287,10 @@ function renderDetail(first){
   h+='<div class="tf">'+tfLabels.map(([l,n])=>'<span class="tfb'+(TF===n?' on':'')+'" onclick="setTF('+n+')">'+l+'</span>').join('')+'</div>';
   h+='<div class="chart-box"><canvas id="stChart"></canvas></div>';
   h+='<div class="note" style="margin-top:6px">Linea prezzo con medie mobili a <b style="color:var(--gold)">50</b> e '+
-     '<b style="color:var(--sma2,#7ea6d0)">200</b> giorni.</div>';
+     '<b style="color:var(--sma2,#7ea6d0)">200</b> giorni.'+
+     (s.poc?' Fascia <b style="color:var(--purple)">viola</b>: area di valore (70% dei volumi dell’ultimo anno); '+
+       'linea tratteggiata viola: <b>POC</b>, il prezzo con più scambi — spesso agisce da supporto/resistenza.':'')+
+     '</div>';
 
   h+='<div class="grid2">';
   // left: fair value + action
@@ -310,6 +313,8 @@ function renderDetail(first){
      '<div class="lvl"><div class="n tnum '+(t.drawdown<-10?'down':'')+'">'+pct(t.drawdown)+'</div><div class="t">Dai max 1A</div></div>'+
      '</div>';
   h+='<div class="dl" style="margin-top:12px">'+
+     (s.poc?row('POC — Point of Control', money(s.poc.poc,cur)):'')+
+     (s.poc?row('Area di valore', money(s.poc.va_low,cur)+' – '+money(s.poc.va_high,cur)):'')+
      row('Massimo 52 sett.', money(t.high_52w,cur))+
      row('Minimo 52 sett.', money(t.low_52w,cur))+
      row('RSI (14)', t.rsi!=null?fmt(t.rsi):'—')+
@@ -364,15 +369,26 @@ function drawChart(s, animate){
   const ser=s.series, n=ser.close.length, k=Math.max(0,n-TF);
   const labels=ser.dates.slice(k), close=ser.close.slice(k),
         s50=ser.sma50.slice(k), s200=ser.sma200.slice(k);
-  const grid=cssv('--grid'), tick=cssv('--tick'), ink=cssv('--cink'), fill=cssv('--cfill');
-  CH=new Chart(el,{type:'line',data:{labels,datasets:[
-      {label:'Prezzo',data:close,borderColor:ink,backgroundColor:fill,borderWidth:1.6,pointRadius:0,tension:.15,fill:true},
-      {label:'Media 50g',data:s50,borderColor:GOLD,borderWidth:1.1,pointRadius:0,tension:.15,borderDash:[4,3]},
-      {label:'Media 200g',data:s200,borderColor:cssv('--sma2'),borderWidth:1.1,pointRadius:0,tension:.15},
-    ]},
+  const grid=cssv('--grid'), tick=cssv('--tick'), ink=cssv('--cink'), fill=cssv('--cfill'), purp=cssv('--purple');
+  const datasets=[
+      {label:'Prezzo',data:close,borderColor:ink,backgroundColor:fill,borderWidth:1.6,pointRadius:0,tension:.15,fill:true,order:1},
+      {label:'Media 50g',data:s50,borderColor:GOLD,borderWidth:1.1,pointRadius:0,tension:.15,borderDash:[4,3],order:2},
+      {label:'Media 200g',data:s200,borderColor:cssv('--sma2'),borderWidth:1.1,pointRadius:0,tension:.15,order:2},
+  ];
+  const hidden=[];
+  if(s.poc){
+    const L=labels.length;
+    datasets.push({label:'Area di valore',data:new Array(L).fill(s.poc.va_high),borderColor:'transparent',
+      backgroundColor:'rgba(168,151,207,.14)',pointRadius:0,fill:'+1',order:6});
+    datasets.push({label:'__va_low',data:new Array(L).fill(s.poc.va_low),borderColor:'transparent',pointRadius:0,fill:false,order:6});
+    datasets.push({label:'POC',data:new Array(L).fill(s.poc.poc),borderColor:purp,borderWidth:1.3,borderDash:[2,3],pointRadius:0,fill:false,order:5});
+    hidden.push('Area di valore','__va_low');
+  }
+  CH=new Chart(el,{type:'line',data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,animation:animate&&!REDUCE?{duration:700}:false,
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)+' '+s.currency}}},
+      plugins:{legend:{display:false},tooltip:{filter:c=>!hidden.includes(c.dataset.label),
+        callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)+' '+s.currency}}},
       scales:{x:{grid:{display:false},ticks:{color:tick,maxTicksLimit:6,font:{size:10},autoSkip:true}},
         y:{position:'right',grid:{color:grid},ticks:{color:tick,font:{size:10}}}}}});
 }

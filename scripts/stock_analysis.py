@@ -177,6 +177,9 @@ def build_stock(
     fair = compute_fair_value(price, fund)
     action = _stock_action(verdict, vrsi, fair)
 
+    # POC / area di valore (profilo dei volumi sull'ultimo anno)
+    poc = ind.volume_profile(highs, lows, closes, volumes, lookback=252, bins=50)
+
     hist_len = min(len(closes), 520)
     s = len(closes) - hist_len
 
@@ -194,6 +197,7 @@ def build_stock(
         "reasons": reasons,
         "action": action,
         "fair_value": fair,
+        "poc": poc,
         "technical": {
             "rsi": _r(vrsi),
             "sma50": _r(v50),

@@ -257,8 +257,12 @@ def trend_structure(highs, lows, closes, k: int = 5, lookback: int = 126,
     elif close <= prior_low:
         breakout = "down"
 
-    resistance = sh[-1][1] if sh else prior_high
-    support = sl[-1][1] if sl else prior_low
+    # resistenza = swing high piu' vicino SOPRA il prezzo; supporto = swing low
+    # piu' vicino SOTTO il prezzo (garantisce supporto <= prezzo <= resistenza)
+    res_above = [p for _, p in sh if p >= close]
+    sup_below = [p for _, p in sl if p <= close]
+    resistance = min(res_above) if res_above else max(prior_high, close)
+    support = max(sup_below) if sup_below else min(prior_low, close)
     return {
         "trend": trend,
         "resistance": round(resistance, 2),

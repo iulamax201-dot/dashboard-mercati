@@ -36,6 +36,7 @@ SEEDS = [
     {"name": "Eli Lilly", "ticker": "LLY", "cur": "USD", "mkt": "NYSE", "theme": "Salute · Farmaceutica", "start": 780, "drift": 0.0008, "vol": 0.018},
     {"name": "Novo Nordisk", "ticker": "NVO", "cur": "USD", "mkt": "NYSE", "theme": "Salute · Farmaceutica", "start": 128, "drift": -0.0002, "vol": 0.02},
     {"name": "LVMH", "ticker": "MC.PA", "cur": "EUR", "mkt": "Parigi", "theme": "Lusso · Beni voluttuari", "start": 640, "drift": -0.0001, "vol": 0.016},
+    {"name": "EssilorLuxottica", "ticker": "EL.PA", "cur": "EUR", "mkt": "Parigi", "theme": "Lusso · Occhialeria / Salute visiva", "start": 245, "drift": 0.0006, "vol": 0.014},
     {"name": "Ferrari", "ticker": "RACE", "cur": "EUR", "mkt": "Milano", "theme": "Lusso · Auto (Italia)", "start": 420, "drift": 0.0007, "vol": 0.015},
     {"name": "Rigetti Computing", "ticker": "RGTI", "cur": "USD", "mkt": "NasdaqCM", "theme": "Tech · Quantum computing (speculativo)", "start": 14, "drift": 0.0012, "vol": 0.055},
     {"name": "D-Wave Quantum", "ticker": "QBTS", "cur": "USD", "mkt": "NYSE", "theme": "Tech · Quantum computing (speculativo)", "start": 8.5, "drift": 0.001, "vol": 0.06},

@@ -52,6 +52,7 @@ STOCKS = [
     {"name": "Eli Lilly", "ticker": "LLY", "symbol": "LLY", "theme": "Salute · Farmaceutica"},
     {"name": "Novo Nordisk", "ticker": "NVO", "symbol": "NVO", "theme": "Salute · Farmaceutica"},
     {"name": "LVMH", "ticker": "MC.PA", "symbol": "MC.PA", "theme": "Lusso · Beni voluttuari"},
+    {"name": "EssilorLuxottica", "ticker": "EL.PA", "symbol": "EL.PA", "theme": "Lusso · Occhialeria / Salute visiva"},
     {"name": "Ferrari", "ticker": "RACE", "symbol": "RACE", "theme": "Lusso · Auto (Italia)"},
     {"name": "Rigetti Computing", "ticker": "RGTI", "symbol": "RGTI", "theme": "Tech · Quantum computing (speculativo)"},
     {"name": "D-Wave Quantum", "ticker": "QBTS", "symbol": "QBTS", "theme": "Tech · Quantum computing (speculativo)"},

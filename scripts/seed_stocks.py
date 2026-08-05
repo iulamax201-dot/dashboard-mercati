@@ -40,6 +40,8 @@ SEEDS = [
     {"name": "Ferrari", "ticker": "RACE", "cur": "EUR", "mkt": "Milano", "theme": "Lusso · Auto (Italia)", "start": 420, "drift": 0.0007, "vol": 0.015},
     {"name": "Rigetti Computing", "ticker": "RGTI", "cur": "USD", "mkt": "NasdaqCM", "theme": "Tech · Quantum computing (speculativo)", "start": 14, "drift": 0.0012, "vol": 0.055},
     {"name": "D-Wave Quantum", "ticker": "QBTS", "cur": "USD", "mkt": "NYSE", "theme": "Tech · Quantum computing (speculativo)", "start": 8.5, "drift": 0.001, "vol": 0.06},
+    {"name": "Oro", "ticker": "GC=F", "cur": "USD", "mkt": "COMEX", "theme": "Materie prime · Bene rifugio", "start": 2400, "drift": 0.0006, "vol": 0.01, "metal": True},
+    {"name": "Argento", "ticker": "SI=F", "cur": "USD", "mkt": "COMEX", "theme": "Materie prime · Metallo prezioso", "start": 30, "drift": 0.0007, "vol": 0.018, "metal": True},
 ]
 
 
@@ -72,6 +74,13 @@ def main():
         dates, o, h, l, c, v = gen_series(spec, seed=i + 11)
         price = c[-1]
         rng = random.Random(i + 100)
+        # le materie prime non hanno P/E né target analisti: fair value assente
+        if spec.get("metal"):
+            out.append(stock_analysis.build_stock(
+                spec["name"], spec["ticker"], spec["cur"], spec["mkt"], spec["theme"],
+                dates, o, h, l, c, v, fundamentals=None,
+            ))
+            continue
         # target analisti demo: dispersione realistica attorno al prezzo
         tilt = rng.uniform(-0.12, 0.22)
         target = round(price * (1 + tilt), 2)

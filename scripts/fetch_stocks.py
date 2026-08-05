@@ -56,6 +56,8 @@ STOCKS = [
     {"name": "Ferrari", "ticker": "RACE", "symbol": "RACE", "theme": "Lusso · Auto (Italia)"},
     {"name": "Rigetti Computing", "ticker": "RGTI", "symbol": "RGTI", "theme": "Tech · Quantum computing (speculativo)"},
     {"name": "D-Wave Quantum", "ticker": "QBTS", "symbol": "QBTS", "theme": "Tech · Quantum computing (speculativo)"},
+    {"name": "Oro", "ticker": "GC=F", "symbol": "GC=F", "theme": "Materie prime · Bene rifugio"},
+    {"name": "Argento", "ticker": "SI=F", "symbol": "SI=F", "theme": "Materie prime · Metallo prezioso"},
 ]
 
 

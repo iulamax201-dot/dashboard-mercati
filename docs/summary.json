@@ -1,12 +1,12 @@
 {
-  "updated": "2026-08-07T15:07:12Z",
-  "text": "Fase di pausa in attesa del dato chiave sul mercato del lavoro USA (i payroll): dopo la corsa ai record Wall Street tira il fiato e chiude in leggero rosso (Dow Jones -0,85%, S&P 500 e Nasdaq poco mossi), con i semiconduttori in calo compensati dal software e SpaceX ancora sotto pressione (oltre -12%). Il quadro tecnico di fondo resta pienamente rialzista su tutti e tre gli indici, ma la tensione si allenta: il VIX scende in area «calma» (~15) e l'indicatore di rischio correzione rientra un po' (resta elevato solo sull'S&P 500). Sul fronte della ricerca è ancora Goldman Sachs a dettare i temi: indica due azioni europee che a suo giudizio potrebbero più che raddoppiare, ha in portafoglio una quota (4,9%) in Avio e conferma la stima del PIL USA del terzo trimestre al 2,7%; resta centrale il tema dell'intelligenza artificiale, la cui spesa reale supererebbe il trilione. La rotazione settoriale è ancora risk-on, guidata da finanziari, sanità e tecnologia.",
+  "updated": "2026-08-10T15:08:12Z",
+  "text": "Mercati prudenti ma di fondo costruttivi: gli indici procedono con cautela, con lo sguardo sullo Stretto di Hormuz e sul petrolio in rialzo, mentre a Wall Street pesa la debolezza dei chip (giù Intel); i tre indici USA restano comunque pienamente rialzisti e i titoli tech tendono a stabilizzarsi. La notizia di giornata sul fronte delle view è il rialzo del target di J.P. Morgan sull'S&P 500 di fine anno a 8.000 punti, un segnale di ottimismo di medio periodo. Molto attiva anche Goldman Sachs: segnala che gli hedge fund comprano azioni globali per la seconda settimana consecutiva, consiglia di «comprare sul ribasso» due titoli legati all'intelligenza artificiale schiacciati nelle ultime sedute e osserva come le banche europee siano rimaste indietro, oltre a confermare l'indicazione su due azioni europee che potrebbero più che raddoppiare. Il quadro tecnico è solido ma non privo di tensione: il rischio correzione resta elevato sull'S&P 500, con il VIX su livelli normali (~15). La rotazione settoriale è risk-on, guidata da sanità, finanziari ed energia (quest'ultima favorita dal rialzo del greggio).",
   "bullets": [
-    "Pausa in attesa dei payroll USA: Wall Street chiude in leggero rosso (Dow -0,85%)",
-    "Semiconduttori in calo compensati dal software; ancora sotto pressione SpaceX (-12%)",
-    "Tensione in calo: VIX in area «calma» (~15) e rischio correzione un po' rientrato",
-    "Goldman Sachs: due titoli europei che potrebbero raddoppiare, quota 4,9% in Avio, PIL USA Q3 al 2,7%",
-    "Indici tutti rialzisti; rotazione risk-on guidata da finanziari, sanità e tecnologia"
+    "J.P. Morgan alza il target dell'S&P 500 di fine anno a 8.000 punti",
+    "Borse prudenti con occhi su Hormuz e petrolio in rialzo; a Wall Street giù Intel (chip deboli)",
+    "Goldman Sachs: hedge fund comprano azioni globali per la 2ª settimana; «comprare sul ribasso» due titoli AI",
+    "GS: banche europee indietro; conferma due titoli europei che potrebbero raddoppiare",
+    "Indici tutti rialzisti; rischio correzione ancora elevato sull'S&P; VIX normale (~15)"
   ],
-  "sources": "ANSA, Il Sole 24 Ore, Advisor Online, firstonline.info, Corriere della Sera, Borsa Italiana, Milano Finanza, MarketScreener Italia, Investing.com, Yahoo Finanza, Teleborsa, SoldiOnline.it, FinanzaOnline, Goldman Sachs"
+  "sources": "Il Sole 24 Ore, AdvisorOnline, ANSA, Corriere della Sera, firstonline.info, Borsa Italiana, Teleborsa, Milano Finanza, MarketScreener Italia, Investing.com, TradingView, Yahoo Finanza, Goldman Sachs, J.P. Morgan"
 }

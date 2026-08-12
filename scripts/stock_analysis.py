@@ -128,6 +128,128 @@ def fmt_num(v: Optional[float]) -> str:
     return f"{v:.2f}".rstrip("0").rstrip(".") if v == int(v) else f"{v:.2f}"
 
 
+def _volumetric(dates, opens, highs, lows, closes, volumes, currency, poc_dict):
+    """Report di analisi volumetrica (Volume Profile, inefficienze, momentum,
+    piano frazionato) secondo la metodologia richiesta. Solo scopo educativo."""
+    if not poc_dict or len(closes) < 60:
+        return None
+    price = closes[-1]
+    poc = poc_dict["poc"]
+    va_lo, va_hi = poc_dict["va_low"], poc_dict["va_high"]
+
+    def m(v):
+        return fmt_num(v) + " " + currency
+
+    mig = ind.poc_migration(highs, lows, volumes)
+    hvn = ind.hvn_nodes(highs, lows, volumes)
+    comp = ind.volatility_compression(closes)
+    mom = ind.momentum_quality(closes)
+    ow, oh, ol, oc = ind._resample(dates, opens, highs, lows, closes, "W")
+    om, omh, oml, omc = ind._resample(dates, opens, highs, lows, closes, "M")
+    fvg_w = ind.open_fvgs(oh, ol, oc)
+    fvg_m = ind.open_fvgs(omh, oml, omc)
+
+    # ---- 1. Quadro Volumetrico & POC ----
+    s1 = []
+    s1.append(f"POC (Point of Control) a {m(poc)}; prezzo attualmente "
+              f"{'sopra' if price >= poc else 'sotto'} l'area di controllo "
+              f"(area di valore {m(va_lo)} – {m(va_hi)}).")
+    if mig:
+        if mig["dir"] == "verso_minimi":
+            s1.append(f"Migrazione del POC verso i minimi ({mig['shift_pct']}%): possibile "
+                      f"accumulo istituzionale in profondità (“alberello”).")
+        elif mig["dir"] == "verso_massimi":
+            s1.append(f"Migrazione del POC verso i massimi (+{mig['shift_pct']}%): i volumi si "
+                      f"spostano in alto, tipico delle fasi mature/distribuzione.")
+        else:
+            s1.append("POC sostanzialmente stabile: volumi bilanciati, nessuna migrazione netta.")
+    if hvn:
+        s1.append("Aree ad alto volume (“malloppi”) di riferimento a " +
+                  ", ".join(m(x) for x in hvn) + " — supporti/resistenze volumetriche.")
+    else:
+        s1.append("Nessun “malloppo” secondario rilevante oltre il POC.")
+
+    # ---- 2. Struttura di Prezzo ----
+    s2 = []
+    if comp:
+        if comp["compressed"]:
+            s2.append(f"Compressione di volatilità in atto (volatilità recente al {comp['ratio']}× "
+                      f"della media): possibile base/rounding prima di un'espansione.")
+        else:
+            s2.append(f"Volatilità nella norma ({comp['ratio']}× della media): nessuna "
+                      f"compressione evidente.")
+    if mom:
+        if mom["type"] == "missile":
+            s2.append(f"Uscita dai minimi impulsiva (“a missile”): +{mom['gain']}% dal minimo "
+                      f"di periodo con avanzata pulita — momentum di qualità.")
+        elif mom["type"] == "morbido":
+            s2.append(f"Avanzata lenta/inclinata (“morbida”): +{mom['gain']}% dal minimo ma senza "
+                      f"impulso netto — attenzione a possibili flag di continuazione ribassista.")
+        else:
+            s2.append("Nessun movimento direzionale netto dai minimi recenti: fase laterale.")
+
+    def _fvg_line(g, tf):
+        d = "rialzista" if g["dir"] == "bull" else "ribassista"
+        pos = "sopra" if g["above"] else "sotto"
+        return f"Inefficienza {d} {tf} aperta a {m(g['lo'])} – {m(g['hi'])} ({pos} il prezzo)."
+    if fvg_w or fvg_m:
+        for g in fvg_w:
+            s2.append(_fvg_line(g, "settimanale"))
+        for g in fvg_m:
+            s2.append(_fvg_line(g, "mensile"))
+    else:
+        s2.append("Nessuna inefficienza settimanale/mensile aperta rilevante.")
+
+    # ---- 3. Invalidation & Target ----
+    s3 = []
+    inval = va_lo if va_lo < price else (mom["from_low"] if mom and mom["from_low"] < price
+                                         else round(price * 0.95, 2))
+    s3.append(f"Invalidazione sotto {m(inval)}: la perdita dell'area di valore/POC farebbe "
+              f"decadere l'impostazione rialzista.")
+    above = sorted({x for x in (hvn + [va_hi]) if x > price})
+    for g in fvg_w + fvg_m:
+        if g["above"]:
+            above.append(g["lo"])
+    above = sorted(set(above))[:3]
+    if above:
+        s3.append("Target volumetrici (per le prese di beneficio) verso " +
+                  ", ".join(m(x) for x in above) +
+                  " e chiusura delle eventuali inefficienze aperte sopra.")
+    else:
+        s3.append("Prezzo in territorio di scoperta: poche resistenze volumetriche sopra, "
+                  "target sulle estensioni/livelli psicologici.")
+
+    # ---- 4. Piano Operativo Frazionato ----
+    ref_res = above[0] if above else None
+    s4 = []
+    if ref_res:
+        s4.append(f"Tranche 1/3 sulla rottura confermata sopra {m(ref_res)} (candela piena ed "
+                  f"estesa, non un semplice rigetto in resistenza).")
+        s4.append(f"Tranche 2/3–3/3 sul retest dell'area POC ({m(poc)}) o della neckline "
+                  f"appena superata.")
+    else:
+        s4.append(f"Con prezzo sopra le principali aree volumetriche, gestire eventuali "
+                  f"aggiunte solo sui ritracciamenti verso il POC ({m(poc)}) o l'area di valore.")
+    top_target = above[-1] if above else None
+    if top_target:
+        s4.append(f"Prese di beneficio (“pisaccata”) alla chiusura delle inefficienze "
+                  f"settimanali/mensili o al test del POC maestro / resistenza superiore ({m(top_target)}).")
+    else:
+        s4.append("Prese di beneficio scalari sulle estensioni, alleggerendo sui primi segnali "
+                  "di esaurimento del momentum.")
+
+    return {
+        "sections": [
+            {"title": "Quadro Volumetrico & POC", "lines": s1},
+            {"title": "Struttura di Prezzo", "lines": s2},
+            {"title": "Punti di Invalidation & Target", "lines": s3},
+            {"title": "Piano Operativo Frazionato", "lines": s4},
+        ],
+        "poc": poc, "va_low": va_lo, "va_high": va_hi,
+        "invalidation": inval, "targets": above, "hvn": hvn,
+    }
+
+
 def build_stock(
     name: str,
     ticker: str,
@@ -224,6 +346,9 @@ def build_stock(
     # struttura del trend (swing high/low, breakout)
     structure = _trend_block(ind.trend_structure(highs, lows, closes), currency)
 
+    # analisi volumetrica avanzata (Volume Profile, inefficienze, piano)
+    volumetric = _volumetric(dates, opens, highs, lows, closes, volumes, currency, poc)
+
     hist_len = min(len(closes), 520)
     s = len(closes) - hist_len
 
@@ -243,6 +368,7 @@ def build_stock(
         "fair_value": fair,
         "poc": poc,
         "structure": structure,
+        "volumetric": volumetric,
         "technical": {
             "rsi": _r(vrsi),
             "sma50": _r(v50),

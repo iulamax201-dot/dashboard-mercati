@@ -273,3 +273,206 @@ def trend_structure(highs, lows, closes, k: int = 5, lookback: int = 126,
         "n_highs": len(sh),
         "n_lows": len(sl),
     }
+
+
+# ---------------------------------------------------------------------------
+# ANALISI VOLUMETRICA AVANZATA (Volume Profile, inefficienze, momentum)
+# ---------------------------------------------------------------------------
+
+def _profile(highs, lows, volumes, lo, hi, bins):
+    """Distribuisce il volume di ogni barra sui bin coperti da [low, high]."""
+    width = (hi - lo) / bins
+    prof = [0.0] * bins
+    for h, l, v in zip(highs, lows, volumes):
+        if v is None or v <= 0 or h is None or l is None:
+            continue
+        b0 = max(0, min(bins - 1, int((l - lo) / width)))
+        b1 = max(0, min(bins - 1, int((h - lo) / width)))
+        share = v / (b1 - b0 + 1)
+        for b in range(b0, b1 + 1):
+            prof[b] += share
+    return prof, width
+
+
+def _poc_of(highs, lows, volumes, bins=40):
+    hs = [x for x in highs if x is not None]
+    ls = [x for x in lows if x is not None]
+    if not hs or not ls:
+        return None
+    lo, hi = min(ls), max(hs)
+    if not (hi > lo):
+        return None
+    prof, width = _profile(highs, lows, volumes, lo, hi, bins)
+    if sum(prof) <= 0:
+        return None
+    i = max(range(bins), key=lambda k: prof[k])
+    return lo + (i + 0.5) * width
+
+
+def hvn_nodes(highs, lows, volumes, lookback=252, bins=50, top_n=3, gap=3):
+    """Aree ad alto volume ('malloppi') oltre il POC: i massimi locali del
+    profilo, distanti almeno `gap` bin dal POC e tra loro."""
+    if not highs:
+        return []
+    s = max(0, len(highs) - lookback)
+    H, L, V = highs[s:], lows[s:], volumes[s:]
+    hs = [x for x in H if x is not None]
+    ls = [x for x in L if x is not None]
+    if not hs or not ls:
+        return []
+    lo, hi = min(ls), max(hs)
+    if not (hi > lo):
+        return []
+    prof, width = _profile(H, L, V, lo, hi, bins)
+    if sum(prof) <= 0:
+        return []
+    poc_i = max(range(bins), key=lambda k: prof[k])
+    # massimi locali
+    peaks = []
+    for i in range(1, bins - 1):
+        if prof[i] >= prof[i - 1] and prof[i] >= prof[i + 1] and abs(i - poc_i) >= gap:
+            peaks.append((prof[i], i))
+    peaks.sort(reverse=True)
+    out, used = [], []
+    for _, i in peaks:
+        if all(abs(i - u) >= gap for u in used):
+            out.append(round(lo + (i + 0.5) * width, 2))
+            used.append(i)
+        if len(out) >= top_n:
+            break
+    return out
+
+
+def poc_migration(highs, lows, volumes, recent=63, older=189):
+    """Confronta il POC recente con quello del periodo precedente: uno
+    spostamento verso i minimi suggerisce accumulo ('alberello')."""
+    n = len(highs)
+    if n < recent + 40:
+        return None
+    poc_r = _poc_of(highs[n - recent:], lows[n - recent:], volumes[n - recent:])
+    o0 = max(0, n - older)
+    poc_o = _poc_of(highs[o0:n - recent], lows[o0:n - recent], volumes[o0:n - recent])
+    if poc_r is None or poc_o is None:
+        return None
+    ratio = poc_r / poc_o - 1
+    if ratio <= -0.02:
+        direction = "verso_minimi"
+    elif ratio >= 0.02:
+        direction = "verso_massimi"
+    else:
+        direction = "stabile"
+    return {"dir": direction, "poc_recent": round(poc_r, 2),
+            "poc_old": round(poc_o, 2), "shift_pct": round(ratio * 100, 1)}
+
+
+def _resample(dates, opens, highs, lows, closes, period):
+    """Aggrega le barre giornaliere in settimanali ('W') o mensili ('M')."""
+    import datetime as _dt
+    buckets = {}
+    order = []
+    for i, d in enumerate(dates):
+        try:
+            dt = _dt.date.fromisoformat(d[:10])
+        except Exception:  # noqa: BLE001
+            continue
+        if period == "W":
+            iso = dt.isocalendar()
+            key = (iso[0], iso[1])
+        else:
+            key = (dt.year, dt.month)
+        if key not in buckets:
+            buckets[key] = {"o": opens[i], "h": highs[i], "l": lows[i], "c": closes[i]}
+            order.append(key)
+        else:
+            b = buckets[key]
+            b["h"] = max(b["h"], highs[i])
+            b["l"] = min(b["l"], lows[i])
+            b["c"] = closes[i]
+    o = [buckets[k]["o"] for k in order]
+    h = [buckets[k]["h"] for k in order]
+    l = [buckets[k]["l"] for k in order]
+    c = [buckets[k]["c"] for k in order]
+    return o, h, l, c
+
+
+def open_fvgs(highs, lows, closes, max_out=2):
+    """Inefficienze di prezzo (Fair Value Gap a 3 barre) ancora aperte.
+    Bullish: low[i] > high[i-2]; bearish: high[i] < low[i-2].
+    Restituisce le piu' vicine al prezzo attuale, non ancora riempite."""
+    n = len(closes)
+    if n < 3:
+        return []
+    price = closes[-1]
+    gaps = []
+    for i in range(2, n):
+        if lows[i] > highs[i - 2]:
+            g_lo, g_hi, d = highs[i - 2], lows[i], "bull"
+        elif highs[i] < lows[i - 2]:
+            g_lo, g_hi, d = highs[i], lows[i - 2], "bear"
+        else:
+            continue
+        # ancora aperta se il prezzo successivo non l'ha riempita
+        filled = any(lows[j] <= g_lo and highs[j] >= g_hi for j in range(i + 1, n))
+        # oppure parzialmente attraversata: consideriamo chiusa se il prezzo
+        # e' rientrato oltre meta' del gap
+        mid = (g_lo + g_hi) / 2
+        crossed = any(lows[j] <= mid <= highs[j] for j in range(i + 1, n))
+        if filled or crossed:
+            continue
+        gaps.append({"dir": d, "lo": round(g_lo, 2), "hi": round(g_hi, 2),
+                     "above": g_lo > price, "dist": abs((g_lo + g_hi) / 2 - price)})
+    gaps.sort(key=lambda g: g["dist"])
+    for g in gaps:
+        g.pop("dist", None)
+    return gaps[:max_out]
+
+
+def momentum_quality(closes, lookback=63):
+    """Qualita' dell'uscita dai minimi: impulsiva ('missile') vs lenta/
+    inclinata ('morbido')."""
+    n = len(closes)
+    if n < 10:
+        return None
+    s = max(0, n - lookback)
+    window = closes[s:]
+    i_low = min(range(len(window)), key=lambda k: window[k])
+    seg = window[i_low:]
+    bars = len(seg) - 1
+    if bars < 3 or seg[0] == 0:
+        return {"type": "laterale", "gain": 0.0, "bars": bars, "from_low": round(window[i_low], 2)}
+    gain = (seg[-1] / seg[0] - 1) * 100
+    # R^2 di una regressione lineare su seg
+    m = len(seg)
+    xs = list(range(m))
+    mx = sum(xs) / m
+    my = sum(seg) / m
+    sxx = sum((x - mx) ** 2 for x in xs)
+    sxy = sum((xs[k] - mx) * (seg[k] - my) for k in range(m))
+    syy = sum((y - my) ** 2 for y in seg)
+    r2 = (sxy * sxy / (sxx * syy)) if sxx > 0 and syy > 0 else 0.0
+    if gain >= 12 and r2 >= 0.80:
+        typ = "missile"
+    elif gain >= 4:
+        typ = "morbido"
+    else:
+        typ = "laterale"
+    return {"type": typ, "gain": round(gain, 1), "bars": bars,
+            "r2": round(r2, 2), "from_low": round(window[i_low], 2)}
+
+
+def volatility_compression(closes, short=20, long=100):
+    """Compressione di volatilita': deviazione std recente vs storica."""
+    def stdev_ret(vals):
+        rets = [(vals[i] / vals[i - 1] - 1) for i in range(1, len(vals)) if vals[i - 1]]
+        if len(rets) < 2:
+            return None
+        mu = sum(rets) / len(rets)
+        return (sum((r - mu) ** 2 for r in rets) / len(rets)) ** 0.5
+    if len(closes) < long + 1:
+        return None
+    sv = stdev_ret(closes[-short - 1:])
+    lv = stdev_ret(closes[-long - 1:])
+    if not sv or not lv or lv == 0:
+        return None
+    ratio = sv / lv
+    return {"compressed": ratio < 0.75, "ratio": round(ratio, 2)}

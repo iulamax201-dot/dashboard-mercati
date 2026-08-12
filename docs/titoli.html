@@ -126,6 +126,23 @@
   .lvl .n{font-family:Georgia,serif;font-weight:700;font-size:15px}
   .lvl .t{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
   .detail-name{font-family:Georgia,serif;font-size:26px;font-weight:700}
+  /* analisi volumetrica */
+  .vol{margin-top:18px;border:1px solid var(--rule);border-left:3px solid var(--purple);padding:0 16px}
+  .vol>summary{cursor:pointer;font-family:Georgia,serif;font-weight:700;font-size:17px;
+    padding:13px 0;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .vol>summary::-webkit-details-marker{display:none}
+  .vol>summary .tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:-apple-system,sans-serif;font-weight:700}
+  .vol>summary:after{content:"+";color:var(--muted);font-size:18px;margin-left:10px}
+  .vol[open]>summary:after{content:"–"}
+  .vol-body{padding:0 0 14px}
+  .vol-sec{margin:12px 0}
+  .vol-sec .t{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
+    color:var(--gold);margin-bottom:5px}
+  .vol-sec:nth-child(4) .t{color:var(--up)}
+  .vol-sec ul{list-style:none;margin:0;padding:0}
+  .vol-sec li{font-size:13px;line-height:1.55;color:var(--txt2);padding:4px 0 4px 15px;position:relative}
+  .vol-sec li:before{content:"›";position:absolute;left:2px;color:var(--purple);font-weight:700}
+  .vol-note{font-size:11px;color:var(--muted);font-style:italic;margin-top:10px;line-height:1.5}
   .loading{padding:60px 0;text-align:center;color:var(--muted)}
   .disclaimer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);
     font-size:11.5px;color:var(--muted);line-height:1.6}
@@ -335,12 +352,28 @@ function renderDetail(first){
      '</div>';
   h+='</div>';
   h+='</div>'; // grid2
+  h+=volumetricHTML(s);
   h+='</div>'; // panel
   document.getElementById('detail').innerHTML=h;
   drawChart(s, first);
 }
 
 function row(k,v){ return '<div class="r"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+
+function volumetricHTML(s){
+  const v=s.volumetric; if(!v) return '';
+  let b='';
+  v.sections.forEach(sec=>{
+    b+='<div class="vol-sec"><div class="t">'+sec.title+'</div><ul>'+
+       sec.lines.map(l=>'<li>'+l+'</li>').join('')+'</ul></div>';
+  });
+  b+='<div class="vol-note">Metodologia di analisi tecnica volumetrica (Volume Profile / POC, '+
+     'inefficienze di prezzo, price action e gestione frazionata). Elaborazione automatica a '+
+     'scopo esclusivamente educativo: non è un consiglio finanziario né un invito a operare.</div>';
+  return '<details class="vol"><summary>Analisi volumetrica avanzata'+
+    '<span class="tag">Volume Profile · POC · Piano operativo</span></summary>'+
+    '<div class="vol-body">'+b+'</div></details>';
+}
 
 function fvBoxHTML(s){
   const fv=s.fair_value, cur=s.currency;

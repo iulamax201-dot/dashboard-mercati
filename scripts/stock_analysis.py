@@ -247,7 +247,90 @@ def _volumetric(dates, opens, highs, lows, closes, volumes, currency, poc_dict):
         ],
         "poc": poc, "va_low": va_lo, "va_high": va_hi,
         "invalidation": inval, "targets": above, "hvn": hvn,
+        "flags": {
+            "momentum": mom["type"] if mom else None,
+            "compression": bool(comp["compressed"]) if comp else False,
+            "migration": mig["dir"] if mig else None,
+            "above_poc": price >= poc,
+        },
     }
+
+
+def _buy_signal(verdict, rsi, fair, structure, volumetric, currency):
+    """Sintetizza le analisi in un segnale operativo: setup d'acquisto,
+    da osservare, oppure non ora. Euristico, solo scopo educativo."""
+    def m(v):
+        return fmt_num(v) + " " + currency
+
+    up = (fair or {}).get("upside_pct")
+    overvalued = up is not None and up <= -12
+    bias = (structure or {}).get("bias")
+    trend_up, trend_down = bias == "Rialzista", bias == "Ribassista"
+    br = (structure or {}).get("breakout")
+    breakout_up = bool(br) and br.get("dir") == "up"
+    fl = (volumetric or {}).get("flags") or {}
+    mom, comp, mig, above_poc = (fl.get("momentum"), fl.get("compression"),
+                                 fl.get("migration"), fl.get("above_poc"))
+    poc = (volumetric or {}).get("poc")
+    res = (structure or {}).get("resistance")
+
+    def trig_breakout():
+        t = "Innesco: rottura confermata (candela piena)"
+        if res:
+            t += f" sopra {m(res)}"
+        if poc:
+            t += f", con retest verso il POC ({m(poc)})"
+        return t + "."
+
+    # struttura debole / ribassista
+    if trend_down or verdict == "Bearish":
+        if mig == "verso_minimi" and comp:
+            return {"level": "watch", "label": "Possibile accumulo",
+                    "reasons": ["Struttura ancora debole ma POC in migrazione verso i minimi e "
+                                "volatilità compressa: possibile base di accumulo."],
+                    "trigger": trig_breakout()}
+        return {"level": "no", "label": "Non ora",
+                "reasons": ["Struttura debole/ribassista: meglio attendere segnali di inversione."],
+                "trigger": None}
+
+    # trend non ribassista
+    strong = (verdict == "Bullish" and (trend_up or breakout_up) and above_poc
+              and mom == "missile" and not overvalued and (rsi is None or rsi < 78))
+    if strong:
+        r = ["Trend rialzista con prezzo sopra il POC e uscita dai minimi impulsiva («a missile»)."]
+        if up is not None and up >= 5:
+            r.append(f"Valutazione favorevole (potenziale +{up}% sul fair value).")
+        trg = (f"Gestione: aggiungere sui ritracciamenti verso il POC ({m(poc)})"
+               if poc else "Gestire gli ingressi sugli storni") + "."
+        return {"level": "buy", "label": "Setup d'acquisto", "reasons": r, "trigger": trg}
+    if breakout_up and above_poc and not overvalued and (rsi is None or rsi < 80):
+        trg = "Tranche 1/3 sulla rottura confermata"
+        if res:
+            trg += f" sopra {m(res)}"
+        trg += f", 2/3–3/3 sul retest del POC ({m(poc)})." if poc else "."
+        return {"level": "buy", "label": "Setup d'acquisto (breakout)",
+                "reasons": ["Rottura rialzista dei massimi di periodo con prezzo sopra il POC."],
+                "trigger": trg}
+    if verdict == "Bullish" and rsi is not None and rsi >= 78:
+        return {"level": "watch", "label": "Comprare sul ritracciamento",
+                "reasons": [f"Trend forte ma ipercomprato (RSI {rsi:.0f}): non inseguire il rialzo."],
+                "trigger": (f"Attendere il retest verso il POC ({m(poc)})" if poc
+                            else "Attendere un ritracciamento") + " prima di entrare."}
+    if overvalued and (trend_up or verdict == "Bullish"):
+        return {"level": "watch", "label": "Trend ok, ma prezzo caro",
+                "reasons": [f"Impostazione positiva ma quotazione sopra il fair value ({up}%): "
+                            f"rapporto rischio/rendimento meno favorevole."],
+                "trigger": trig_breakout() if res else None}
+    if (trend_up or verdict in ("Bullish", "Neutrale")) and above_poc:
+        return {"level": "watch", "label": "In costruzione",
+                "reasons": ["Impostazione non negativa ma manca ancora un innesco chiaro."],
+                "trigger": trig_breakout() if res else None}
+    if mig == "verso_minimi" and comp:
+        return {"level": "watch", "label": "Possibile accumulo",
+                "reasons": ["POC in migrazione verso i minimi e volatilità compressa: possibile base."],
+                "trigger": trig_breakout() if res else None}
+    return {"level": "no", "label": "Non ora",
+            "reasons": ["Nessun setup d'acquisto chiaro al momento."], "trigger": None}
 
 
 def build_stock(
@@ -349,6 +432,9 @@ def build_stock(
     # analisi volumetrica avanzata (Volume Profile, inefficienze, piano)
     volumetric = _volumetric(dates, opens, highs, lows, closes, volumes, currency, poc)
 
+    # segnale operativo di sintesi (quando comprare secondo le analisi)
+    signal = _buy_signal(verdict, vrsi, fair, structure, volumetric, currency)
+
     hist_len = min(len(closes), 520)
     s = len(closes) - hist_len
 
@@ -369,6 +455,7 @@ def build_stock(
         "poc": poc,
         "structure": structure,
         "volumetric": volumetric,
+        "signal": signal,
         "technical": {
             "rsi": _r(vrsi),
             "sma50": _r(v50),

@@ -81,6 +81,22 @@
   .vd-Neutrale{color:var(--gold);border-color:var(--gold)}
   .fv{font-weight:600}
   .fv-pos{color:var(--up)} .fv-warn{color:var(--gold)} .fv-neg{color:var(--down)}
+  /* segnale operativo */
+  .card.sig-b-buy{border-left:3px solid var(--up)}
+  .card.sig-b-watch{border-left:3px solid var(--gold)}
+  .sig{margin-top:9px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 8px;display:inline-block;border-radius:3px}
+  .sig-buy{color:var(--up);border:1px solid var(--up);background:rgba(75,184,119,.10)}
+  .sig-watch{color:var(--gold);border:1px solid var(--gold)}
+  .opps{border:1px solid var(--rule);background:var(--panel);padding:14px 16px;margin-top:16px}
+  .opp-row{margin:8px 0;font-size:13px;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .opp-tag{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:3px}
+  .opp-tag.buy{color:var(--up);border:1px solid var(--up);background:rgba(75,184,119,.10)}
+  .opp-tag.watch{color:var(--gold);border:1px solid var(--gold)}
+  .chip{font-size:12.5px;padding:3px 10px;border:1px solid var(--rule);border-radius:14px;cursor:pointer;
+    color:var(--ink);background:var(--paper);transition:.15s}
+  .chip:hover{border-color:var(--muted)}
+  .opp-note{font-size:11px;color:var(--muted);font-style:italic;margin-top:10px;line-height:1.5}
   /* detail */
   .tf{display:flex;gap:5px;margin:2px 0 10px;flex-wrap:wrap}
   .tfb{font-size:11px;padding:3px 10px;border:1px solid var(--rule);color:var(--muted);
@@ -241,12 +257,15 @@ function render(mode){
     '<div class="s">In tendenza ribassista<b class="tnum down">'+DATA.bearish_count+'</b></div>'+
     '</div>';
 
+  h += opportunitiesHTML();
+
   // CARDS
   h += '<div class="cards">';
   DATA.stocks.forEach((s,i)=>{
     const fv = s.fair_value;
+    const sg = s.signal || {level:'no',label:'—'};
     const upTxt = fv.upside_pct!=null ? pct(fv.upside_pct)+' vs fair value' : 'fair value n/d';
-    h += '<div class="card'+(i===CURRENT?' active':'')+'" style="animation-delay:'+(REDUCE?0:i*0.04)+'s" onclick="select('+i+')">'+
+    h += '<div class="card sig-b-'+sg.level+(i===CURRENT?' active':'')+'" style="animation-delay:'+(REDUCE?0:i*0.04)+'s" onclick="select('+i+')">'+
       '<canvas class="spark" id="sp-'+i+'"></canvas>'+
       '<div class="theme">'+s.theme+'</div>'+
       '<div class="nm">'+s.name+'</div>'+
@@ -260,6 +279,7 @@ function render(mode){
       '<div class="row" style="border-top:none;padding-top:2px;color:var(--muted)">'+
         '<span>'+upTxt+'</span><span>RSI '+(s.technical.rsi!=null?Math.round(s.technical.rsi):'—')+'</span>'+
       '</div>'+
+      (sg.level!=='no'?'<div class="sig sig-'+sg.level+'">'+(sg.level==='buy'?'▲ ':'◇ ')+sg.label+'</div>':'')+
       '</div>';
   });
   h += '</div>';
@@ -268,6 +288,28 @@ function render(mode){
   document.getElementById('app').innerHTML = h;
   drawSparks();
   renderDetail(mode==='first');
+}
+
+function idxOf(tk){ return DATA.stocks.findIndex(x=>x.ticker===tk); }
+function tickChips(list){
+  return list.map(s=>'<span class="chip" onclick="event.stopPropagation();select('+idxOf(s.ticker)+')">'+s.name+'</span>').join('');
+}
+function opportunitiesHTML(){
+  const buy = DATA.stocks.filter(s=>s.signal&&s.signal.level==='buy');
+  const watch = DATA.stocks.filter(s=>s.signal&&s.signal.level==='watch');
+  let h='<div class="opps"><div class="sub-h">Segnali operativi — quando comprare (secondo le analisi)</div>';
+  if(buy.length){
+    h+='<div class="opp-row"><span class="opp-tag buy">▲ Setup d’acquisto ('+buy.length+')</span> '+tickChips(buy)+'</div>';
+  } else {
+    h+='<div class="opp-row" style="color:var(--muted)">Nessun titolo in setup d’acquisto pieno al momento.</div>';
+  }
+  if(watch.length){
+    h+='<div class="opp-row"><span class="opp-tag watch">◇ Da osservare ('+watch.length+')</span> '+tickChips(watch)+'</div>';
+  }
+  h+='<div class="opp-note">Il segnale sintetizza trend, fair value, struttura e analisi volumetrica. '+
+     'Tocca un titolo per il piano d’ingresso frazionato e l’innesco. Elaborazione automatica a scopo '+
+     'educativo, non è un consiglio finanziario.</div></div>';
+  return h;
 }
 
 function drawSparks(){
@@ -300,6 +342,15 @@ function renderDetail(first){
      '</div>';
   h+='<div style="margin:8px 0"><span class="verdict vd-'+s.verdict+'">'+s.verdict+'</span> '+
      '<span style="color:var(--muted);font-size:12px">forza tecnica '+fmt(s.score)+'/100</span></div>';
+
+  // segnale operativo
+  if(s.signal){
+    const sg=s.signal, lv=sg.level==='buy'?'pos':sg.level==='watch'?'warn':'neg';
+    h+='<div class="act act-'+lv+'"><div class="lab">Segnale operativo — quando comprare</div>'+
+       '<div class="stance">'+(sg.level==='buy'?'▲ ':sg.level==='watch'?'◇ ':'')+sg.label+'</div>'+
+       sg.reasons.map(r=>'<p>'+r+'</p>').join('')+
+       (sg.trigger?'<p style="font-weight:600;color:var(--ink)">'+sg.trigger+'</p>':'')+'</div>';
+  }
 
   // chart
   h+='<div class="tf">'+tfLabels.map(([l,n])=>'<span class="tfb'+(TF===n?' on':'')+'" onclick="setTF('+n+')">'+l+'</span>').join('')+'</div>';

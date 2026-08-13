@@ -46,6 +46,7 @@ STOCKS = [
     {"name": "ASML", "ticker": "ASML", "symbol": "ASML", "theme": "Tech · Semiconduttori"},
     {"name": "SK Hynix", "ticker": "000660.KS", "symbol": "000660.KS", "theme": "Tech · AI / Semiconduttori (memorie)"},
     {"name": "Taiwan Semiconductor", "ticker": "TSM", "symbol": "TSM", "theme": "Tech · AI / Semiconduttori (foundry)"},
+    {"name": "STMicroelectronics", "ticker": "STM", "symbol": "STM", "theme": "Tech · Semiconduttori (Europa)"},
     {"name": "JPMorgan", "ticker": "JPM", "symbol": "JPM", "theme": "Finanza · Banche"},
     {"name": "Intesa Sanpaolo", "ticker": "ISP.MI", "symbol": "ISP.MI", "theme": "Finanza · Banche (Italia)"},
     {"name": "Italgas", "ticker": "IG.MI", "symbol": "IG.MI", "theme": "Utility · Infrastrutture gas (Italia)"},

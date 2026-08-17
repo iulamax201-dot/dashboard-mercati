@@ -257,15 +257,18 @@ def fetch_history(symbol: str) -> Optional[Dict]:
             return None
         res = r.json()["chart"]["result"][0]
         ts = res["timestamp"]
-        cl = res["indicators"]["quote"][0]["close"]
-        dates, closes = [], []
-        for t, c in zip(ts, cl):
+        q = res["indicators"]["quote"][0]
+        cl = q["close"]
+        vol = q.get("volume") or [0] * len(cl)
+        dates, closes, volumes = [], [], []
+        for t, c, v in zip(ts, cl, vol):
             if c is None:
                 continue
             dates.append(dt.datetime.utcfromtimestamp(t).strftime("%Y-%m-%d"))
             closes.append(float(c))
+            volumes.append(float(v or 0))
         if len(closes) > 260:
-            return {"dates": dates, "close": closes}
+            return {"dates": dates, "close": closes, "volume": volumes}
     except Exception as e:  # noqa: BLE001
         print(f"  Storico lungo {symbol} non disponibile: {e}")
     return None
@@ -422,7 +425,8 @@ def build() -> Dict:
         hist = fetch_history(spec["symbol"])
         if hist:
             idx["stats"] = analysis.build_stats(hist["dates"], hist["close"])
-            idx["longterm"] = analysis.build_longterm(hist["dates"], hist["close"])
+            idx["longterm"] = analysis.build_longterm(
+                hist["dates"], hist["close"], hist.get("volume"))
         indices_out.append(idx)
         time.sleep(0.5)
 

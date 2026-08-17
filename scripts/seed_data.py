@@ -84,9 +84,9 @@ def main():
         )
         # storico lungo sintetico dal 2000 (~6500 sedute) per stagionalità,
         # backtest e prospettiva di lungo periodo demo
-        ld, _, _, _, lc, _ = gen_series(spec, n=6500, seed=i + 50)
+        ld, _, _, _, lc, lv = gen_series(spec, n=6500, seed=i + 50)
         idx["stats"] = analysis.build_stats(ld, lc)
-        idx["longterm"] = analysis.build_longterm(ld, lc)
+        idx["longterm"] = analysis.build_longterm(ld, lc, lv)
         indices_out.append(idx)
 
     # settori demo per la rotazione

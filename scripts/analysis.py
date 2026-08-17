@@ -465,18 +465,31 @@ def build_stats(dates: List[str], closes: List[float]) -> Dict:
     return out
 
 
-def build_longterm(dates: List[str], closes: List[float]) -> Optional[Dict]:
-    """Prospettiva di lungo periodo (dal 2000): serie mensile per il grafico
-    più rendimento totale, CAGR e massimo drawdown del periodo."""
+def build_longterm(dates: List[str], closes: List[float],
+                   volumes: Optional[List[float]] = None) -> Optional[Dict]:
+    """Prospettiva di lungo periodo (dal 2000): serie mensile (prezzo, volume,
+    RSI e MACD) per i grafici, più rendimento totale, CAGR e massimo drawdown."""
     import datetime as _dt
     if len(closes) < 24:
         return None
-    # chiusura di fine mese
+    # aggregazione mensile: ultima chiusura del mese, volume totale del mese
     month_close: Dict[str, float] = {}
-    for d, c in zip(dates, closes):
-        month_close[d[:7]] = c
+    month_vol: Dict[str, float] = {}
+    for i, d in enumerate(dates):
+        k = d[:7]
+        month_close[k] = closes[i]
+        if volumes is not None:
+            month_vol[k] = month_vol.get(k, 0.0) + (volumes[i] or 0.0)
     keys = sorted(month_close)
     m_close = [round(month_close[k], 2) for k in keys]
+    m_vol = [int(month_vol.get(k, 0)) for k in keys] if volumes is not None else []
+
+    # indicatori sulla serie MENSILE (RSI 14 mesi, MACD 12/26/9 mesi)
+    m_rsi = [_r(x) for x in ind.rsi(m_close, 14)]
+    macd_line, signal_line, hist = ind.macd(m_close)
+    m_macd = [_r(x, 2) for x in macd_line]
+    m_sig = [_r(x, 2) for x in signal_line]
+    m_hist = [_r(x, 2) for x in hist]
 
     first, last = closes[0], closes[-1]
     total = (last / first - 1) * 100 if first else 0.0
@@ -494,7 +507,9 @@ def build_longterm(dates: List[str], closes: List[float]) -> Optional[Dict]:
         "total_return": round(total, 1),
         "cagr": round(cagr, 1),
         "max_drawdown": round(mdd, 1),
-        "monthly": {"dates": keys, "close": m_close},
+        "monthly": {"dates": keys, "close": m_close, "volume": m_vol,
+                    "rsi": m_rsi, "macd": m_macd, "macd_signal": m_sig,
+                    "macd_hist": m_hist},
     }
 
 

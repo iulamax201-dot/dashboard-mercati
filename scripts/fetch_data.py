@@ -245,10 +245,14 @@ def fetch_google_news(query: str, count: int = 6) -> List[Dict]:
 
 
 def fetch_history(symbol: str) -> Optional[Dict]:
-    """Storico lungo (fino a ~10 anni, giornaliero) per stagionalità e backtest."""
+    """Storico lungo giornaliero dal 2000 a oggi, per stagionalità, backtest
+    e prospettiva di lungo periodo degli indici USA."""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    period1 = int(dt.datetime(2000, 1, 1, tzinfo=dt.timezone.utc).timestamp())
+    period2 = int(dt.datetime.now(dt.timezone.utc).timestamp())
     try:
-        r = SESSION.get(url, params={"range": "10y", "interval": "1d"}, timeout=25)
+        r = SESSION.get(url, params={"period1": period1, "period2": period2,
+                                     "interval": "1d"}, timeout=30)
         if r.status_code != 200:
             return None
         res = r.json()["chart"]["result"][0]
@@ -418,6 +422,7 @@ def build() -> Dict:
         hist = fetch_history(spec["symbol"])
         if hist:
             idx["stats"] = analysis.build_stats(hist["dates"], hist["close"])
+            idx["longterm"] = analysis.build_longterm(hist["dates"], hist["close"])
         indices_out.append(idx)
         time.sleep(0.5)
 

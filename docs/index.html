@@ -380,10 +380,19 @@ function renderDetail(){
 
   // PRICE
   const tfs=[['1M',21],['6M',126],['1A',252],['2A',520],['Tutto',99999]];
+  if(ix.longterm) tfs.push(['Dal 2000',-1]);
+  const isLT = TF===-1 && ix.longterm;
+  const ltNote = isLT
+    ? '<div class="note">Prezzo mensile <b>dal '+ix.longterm.start.slice(0,4)+'</b> (prospettiva di lungo periodo). '+
+      'Rendimento totale <b class="'+cls(ix.longterm.total_return)+'">'+pct(ix.longterm.total_return)+'</b> · '+
+      'crescita media annua (CAGR) <b class="'+cls(ix.longterm.cagr)+'">'+pct(ix.longterm.cagr)+'</b> · '+
+      'peggior discesa <b class="down">'+pct(ix.longterm.max_drawdown)+'</b>. '+
+      'Le medie mobili non sono mostrate su questa scala.</div>'
+    : '<div class="note">Linea scura: prezzo. Linea <b style="color:'+GOLD+'">oro</b>: media 50 giorni (breve). Linea '+
+      '<b style="color:'+cssv('--sma2')+'">grigio-blu</b>: media 200 giorni (lungo). Tratteggiata: massimo storico.</div>';
   h += '<div class="panel"><div class="sub-h">Andamento, medie mobili e massimo storico</div>'+
     '<div class="tf">'+tfs.map(t=>'<span class="tfb'+(TF===t[1]?' on':'')+'" onclick="setTF('+t[1]+')">'+t[0]+'</span>').join('')+'</div>'+
-    '<div class="note">Linea scura: prezzo. Linea <b style="color:'+GOLD+'">oro</b>: media 50 giorni (breve). Linea '+
-    '<b style="color:'+cssv('--sma2')+'">grigio-blu</b>: media 200 giorni (lungo). Tratteggiata: massimo storico.</div>'+
+    ltNote+
     '<div class="chart-box"><canvas id="c-price"></canvas></div></div>';
 
   // VOLUME
@@ -457,7 +466,7 @@ function historyHTML(ix){
   let h='<div class="grid two" style="margin-top:14px">';
   if(se){
     h+='<div class="panel"><div class="sub-h">Stagionalità</div>'+
-      '<div class="note">Rendimento storico medio per mese (ultimi ~'+se.years+' anni). Il mese in corso è evidenziato.</div>'+
+      '<div class="note">Rendimento storico medio per mese (dal 2000, ~'+se.years+' anni). Il mese in corso è evidenziato.</div>'+
       '<div style="font-size:14px;margin-bottom:10px">Storicamente <b>'+se.month_name+'</b> ha reso in media '+
         '<b class="'+cls(se.avg)+'">'+pct(se.avg)+'</b> su '+ix.name+', positivo nel <b>'+se.pos_rate+'%</b> degli anni.</div>'+
       '<div class="chart-box sm"><canvas id="c-seas"></canvas></div>'+
@@ -470,7 +479,7 @@ function historyHTML(ix){
       ? 'Stare sopra la media a 200 giorni è stato storicamente più affidabile (più spesso in positivo): la regola di trend ha avuto senso su questo indice.'
       : 'Qui la regola non ha dato un vantaggio netto: i rendimenti medi "sotto la media" sono spesso gonfiati dai forti rimbalzi post-ribasso, quindi vanno letti con prudenza.';
     h+='<div class="panel"><div class="sub-h">Backtest · regola di trend</div>'+
-      '<div class="note">Rendimento medio nei ~'+bt.fwd_days+' giorni di borsa successivi, a seconda che il prezzo fosse sopra o sotto la media a 200 giorni (ultimi ~10 anni).</div>'+
+      '<div class="note">Rendimento medio nei ~'+bt.fwd_days+' giorni di borsa successivi, a seconda che il prezzo fosse sopra o sotto la media a 200 giorni (dal 2000 a oggi).</div>'+
       '<div class="dl">'+
         (A?('<div class="r"><span class="k">Prezzo <span class="up">sopra</span> SMA200</span><span class="v"><span class="'+cls(A.avg)+'">'+pct(A.avg)+'</span> &nbsp;·&nbsp; '+A.pos_rate+'% positivi</span></div>'):'')+
         (B?('<div class="r"><span class="k">Prezzo <span class="down">sotto</span> SMA200</span><span class="v"><span class="'+cls(B.avg)+'">'+pct(B.avg)+'</span> &nbsp;·&nbsp; '+B.pos_rate+'% positivi</span></div>'):'')+
@@ -611,11 +620,25 @@ function baseOpts(extra){const GRID=cssv('--grid'),TICK=cssv('--tick');
 
 function buildDetailCharts(ix){
   const s0=ix.series;
-  const n = (TF>=99999)?s0.dates.length:Math.min(TF, s0.dates.length);
+  const isLT = TF===-1 && ix.longterm;
+  // le sotto-analisi (volumi, RSI, MACD) restano sul massimo dello storico
+  // giornaliero disponibile; il prezzo, in modalità "Dal 2000", usa il mensile
+  const n = (TF>=99999||isLT)?s0.dates.length:Math.min(TF, s0.dates.length);
   const sl=a=>(a||[]).slice(-n);
   const s={dates:sl(s0.dates),close:sl(s0.close),sma50:sl(s0.sma50),sma200:sl(s0.sma200),
     volume:sl(s0.volume),rsi:sl(s0.rsi),macd:sl(s0.macd),macd_signal:sl(s0.macd_signal),macd_hist:sl(s0.macd_hist)};
   const GRID=cssv('--grid'), TICK=cssv('--tick');
+
+  if(isLT){
+    const lt=ix.longterm.monthly;
+    const athArr = lt.dates.map(()=>ix.ath);
+    mk('c-price',{type:'line',data:{labels:lt.dates,datasets:[
+      {label:'Prezzo (mensile)',data:lt.close,borderColor:cssv('--cink'),borderWidth:1.6,pointRadius:0,fill:true,
+        backgroundColor:cssv('--cfill'),tension:.05},
+      {label:'Massimo storico',data:athArr,borderColor:cssv('--cath'),borderWidth:1,pointRadius:0,borderDash:[5,4]},
+    ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:14,font:{size:11},usePointStyle:true}},
+      tooltip:{backgroundColor:'#0e0d0b'}}})});
+  } else {
   const athArr = s.dates.map(()=>ix.ath);
   mk('c-price',{type:'line',data:{labels:s.dates,datasets:[
     {label:'Prezzo',data:s.close,borderColor:cssv('--cink'),borderWidth:1.7,pointRadius:0,fill:true,
@@ -625,6 +648,7 @@ function buildDetailCharts(ix){
     {label:'Massimo storico',data:athArr,borderColor:cssv('--cath'),borderWidth:1,pointRadius:0,borderDash:[5,4]},
   ]},options:baseOpts({plugins:{legend:{display:true,labels:{color:TICK,boxWidth:14,font:{size:11},usePointStyle:true}},
     tooltip:{backgroundColor:'#0e0d0b'}}})});
+  }
 
   const vcol = s.volume.map((_,i)=> i>0 && s.close[i] < s.close[i-1] ? 'rgba(226,106,95,.45)' : 'rgba(75,184,119,.45)');
   mk('c-vol',{type:'bar',data:{labels:s.dates,datasets:[{data:s.volume,backgroundColor:vcol,borderWidth:0}]},

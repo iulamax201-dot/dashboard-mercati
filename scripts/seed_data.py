@@ -82,9 +82,11 @@ def main():
             spec["name"], spec["symbol"], dates, o, h, l, c, v,
             fundamentals=fund, ath=ath, news=news,
         )
-        # storico lungo sintetico (~10 anni) per stagionalità e backtest demo
-        ld, _, _, _, lc, _ = gen_series(spec, n=2600, seed=i + 50)
+        # storico lungo sintetico dal 2000 (~6500 sedute) per stagionalità,
+        # backtest e prospettiva di lungo periodo demo
+        ld, _, _, _, lc, _ = gen_series(spec, n=6500, seed=i + 50)
         idx["stats"] = analysis.build_stats(ld, lc)
+        idx["longterm"] = analysis.build_longterm(ld, lc)
         indices_out.append(idx)
 
     # settori demo per la rotazione

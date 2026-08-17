@@ -465,6 +465,39 @@ def build_stats(dates: List[str], closes: List[float]) -> Dict:
     return out
 
 
+def build_longterm(dates: List[str], closes: List[float]) -> Optional[Dict]:
+    """Prospettiva di lungo periodo (dal 2000): serie mensile per il grafico
+    più rendimento totale, CAGR e massimo drawdown del periodo."""
+    import datetime as _dt
+    if len(closes) < 24:
+        return None
+    # chiusura di fine mese
+    month_close: Dict[str, float] = {}
+    for d, c in zip(dates, closes):
+        month_close[d[:7]] = c
+    keys = sorted(month_close)
+    m_close = [round(month_close[k], 2) for k in keys]
+
+    first, last = closes[0], closes[-1]
+    total = (last / first - 1) * 100 if first else 0.0
+    try:
+        d0 = _dt.date.fromisoformat(dates[0][:10])
+        d1 = _dt.date.fromisoformat(dates[-1][:10])
+        years = (d1 - d0).days / 365.25
+    except Exception:  # noqa: BLE001
+        years = len(keys) / 12
+    cagr = ((last / first) ** (1 / years) - 1) * 100 if first > 0 and years > 0 else 0.0
+    mdd = ind.max_drawdown(closes)
+    return {
+        "start": dates[0][:10],
+        "years": round(years, 1),
+        "total_return": round(total, 1),
+        "cagr": round(cagr, 1),
+        "max_drawdown": round(mdd, 1),
+        "monthly": {"dates": keys, "close": m_close},
+    }
+
+
 def market_summary(indices: List[Dict]) -> Dict:
     """Sintesi complessiva del mercato aggregando i tre indici."""
     scores = [i["score"] for i in indices]

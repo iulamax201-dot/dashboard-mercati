@@ -58,6 +58,14 @@
   .sub-h{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
     font-weight:700;margin:0 0 10px}
   .note{font-size:12.5px;color:var(--muted);margin:4px 0 12px;line-height:1.5}
+  .vhelp{margin-top:8px;border-top:1px solid var(--rule2)}
+  .vhelp>summary{cursor:pointer;list-style:none;font-size:12px;font-weight:700;letter-spacing:.03em;
+    color:var(--navy);padding:8px 0 4px}
+  .vhelp>summary::-webkit-details-marker{display:none}
+  .vhelp>summary:before{content:"＋ ";color:var(--muted)}
+  .vhelp[open]>summary:before{content:"－ "}
+  .vhelp-body{font-size:12.5px;color:var(--txt2);line-height:1.55;padding-bottom:6px}
+  .vhelp-body p{margin:6px 0}
   /* panels */
   .panel{background:var(--panel);border:1px solid var(--rule);padding:16px 18px;margin-top:14px}
   .grid{display:grid;gap:16px}
@@ -480,7 +488,20 @@ function volumeAnalysisHTML(ix){
         '<span style="width:'+va.sell_pct+'%;background:'+DOWN+'"></span></div>'+
     '</div>'+
     '<div class="note" style="margin-top:8px">'+va.text+'</div>'+
+    volHelpHTML()+
     '</div>';
+}
+
+function volHelpHTML(){
+  return '<details class="vhelp"><summary>Cosa significa?</summary>'+
+    '<div class="vhelp-body">'+
+    '<p><b>In breve:</b> questo riquadro dice se dietro al movimento del prezzo ci sono davvero gli scambi (i volumi) a sostenerlo.</p>'+
+    '<p><b>Volume vs media 20g</b> — quanti scambi ci sono stati nell’ultima seduta rispetto alla media recente. Sopra la media = movimento più affidabile; molto sotto = mercato “svuotato”, meno affidabile.</p>'+
+    '<p><b>OBV (flusso cumulato)</b> — somma i volumi: sale nei giorni in cui il prezzo chiude in rialzo, scende in quelli in ribasso. In salita = i flussi entrano; in calo = i flussi escono.</p>'+
+    '<p><b>Divergenza</b> — il campanello: se il <b>prezzo sale ma l’OBV scende</b> è una <i>distribuzione nascosta</i> (rialzo poco sostenuto dai volumi → prudenza); se il <b>prezzo scende ma l’OBV sale</b> è un <i>accumulo nascosto</i> (possibile ripresa).</p>'+
+    '<p><b>Compratori / Venditori</b> — quanta parte del volume si è mossa nelle giornate di rialzo (verde) o ribasso (rosso). Verde nettamente sopra il 50% = accumulo; rosso sopra = distribuzione; circa metà e metà = equilibrio.</p>'+
+    '<p style="color:var(--muted)">È un aiuto alla lettura, non un consiglio finanziario.</p>'+
+    '</div></details>';
 }
 
 function historyHTML(ix){

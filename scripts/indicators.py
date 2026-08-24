@@ -476,3 +476,58 @@ def volatility_compression(closes, short=20, long=100):
         return None
     ratio = sv / lv
     return {"compressed": ratio < 0.75, "ratio": round(ratio, 2)}
+
+
+def obv(closes, volumes):
+    """On-Balance Volume: flusso cumulato dei volumi (segno dato dal prezzo)."""
+    out = [0.0] * len(closes)
+    for i in range(1, len(closes)):
+        v = volumes[i] or 0
+        if closes[i] > closes[i - 1]:
+            out[i] = out[i - 1] + v
+        elif closes[i] < closes[i - 1]:
+            out[i] = out[i - 1] - v
+        else:
+            out[i] = out[i - 1]
+    return out
+
+
+def volume_analysis(closes, volumes, win=20):
+    """Metriche di volume: volume relativo alla media, pressione compratori/
+    venditori (volume nelle giornate up vs down) e trend/divergenza dell'OBV."""
+    n = len(closes)
+    if n < win + 2 or not volumes or not any(volumes):
+        return None
+    recent = [v for v in volumes[-win:] if v]
+    if not recent:
+        return None
+    avg = sum(recent) / len(recent)
+    last = volumes[-1] or recent[-1]
+    rel = (last / avg - 1) * 100 if avg else 0.0
+
+    up = down = 0.0
+    for i in range(max(1, n - win), n):
+        ch = closes[i] - closes[i - 1]
+        if ch > 0:
+            up += volumes[i] or 0
+        elif ch < 0:
+            down += volumes[i] or 0
+    tot = up + down
+    buy = (up / tot * 100) if tot else 50.0
+
+    ob = obv(closes, volumes)
+    ob_then = ob[-win] if n > win else ob[0]
+    trend = "up" if ob[-1] > ob_then else "down" if ob[-1] < ob_then else "flat"
+    price_up = closes[-1] > closes[-win]
+    div = None
+    if price_up and trend == "down":
+        div = "bearish"
+    elif (not price_up) and trend == "up":
+        div = "bullish"
+
+    return {
+        "last": int(last), "avg": int(avg), "rel_pct": round(rel, 0),
+        "buy_pct": round(buy), "sell_pct": round(100 - buy),
+        "obv_trend": trend, "divergence": div, "win": win,
+        "obv_spark": [round(x) for x in ob[-60:]],
+    }

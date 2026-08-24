@@ -223,6 +223,7 @@ def build_index_analysis(
         "at_ath": at_ath,
         "outlook": outlook,
         "action": action,
+        "volume_analysis": volume_report(closes, volumes),
         "news": news or [],
         "technical": {
             "rsi": _r(v_rsi),
@@ -462,6 +463,48 @@ def build_stats(dates: List[str], closes: List[float]) -> Dict:
             "rule": "Prezzo sopra vs sotto la media a 200 giorni",
             "fwd_days": fwd, "above": a, "below": b,
         }
+    return out
+
+
+def volume_report(closes: List[float], volumes: List[float]) -> Optional[Dict]:
+    """Analisi dei volumi in italiano: volume relativo alla media, pressione
+    compratori/venditori e OBV con eventuale divergenza. Solo scopo educativo."""
+    raw = ind.volume_analysis(closes, volumes)
+    if not raw:
+        return None
+    rel = raw["rel_pct"]
+    if rel >= 50:
+        rl = "in forte aumento"
+    elif rel >= 15:
+        rl = "sopra la media"
+    elif rel > -15:
+        rl = "nella norma"
+    else:
+        rl = "in calo"
+    buy = raw["buy_pct"]
+    if buy >= 58:
+        pl, plevel = "accumulo (compratori in controllo)", "pos"
+    elif buy <= 42:
+        pl, plevel = "distribuzione (venditori in controllo)", "neg"
+    else:
+        pl, plevel = "equilibrio tra compratori e venditori", "warn"
+    tr = {"up": "in salita", "down": "in calo", "flat": "laterale"}[raw["obv_trend"]]
+
+    text = (f"Ultima seduta con volumi {rl} ({rel:+.0f}% rispetto alla media a {raw['win']} sedute). "
+            f"Negli ultimi {raw['win']} giorni prevale {pl}: circa il {buy}% del volume si è mosso nelle "
+            f"giornate di rialzo. Il flusso cumulato (OBV) è {tr}")
+    if raw["divergence"] == "bearish":
+        text += (", ma in divergenza ribassista con il prezzo: possibile distribuzione nascosta "
+                 "(prezzo su, volumi che non seguono).")
+    elif raw["divergence"] == "bullish":
+        text += (", in divergenza rialzista con il prezzo: possibile accumulo nascosto "
+                 "(prezzo debole ma flussi in ingresso).")
+    else:
+        text += ", coerente con l'andamento del prezzo."
+
+    out = dict(raw)
+    out.update({"rel_label": rl, "pressure": pl, "pressure_level": plevel,
+                "obv_dir": tr, "text": text})
     return out
 
 

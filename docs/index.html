@@ -399,7 +399,9 @@ function renderDetail(){
   h += '<div class="panel"><div class="sub-h">Volumi degli scambi</div>'+
     '<div class="note">Volumi elevati confermano la forza di un movimento; un rialzo con volumi in calo è meno affidabile. '+
     'Barre verdi: giornate in rialzo; rosse: in ribasso.</div>'+
-    '<div class="chart-box sm"><canvas id="c-vol"></canvas></div></div>';
+    '<div class="chart-box sm"><canvas id="c-vol"></canvas></div>'+
+    volumeAnalysisHTML(ix)+
+    '</div>';
 
   // RSI + MACD
   h += '<div class="grid two" style="margin-top:14px">'+
@@ -458,6 +460,28 @@ function row(k,v){return '<div class="r"><span class="k">'+k+'</span><span class
 function ret(l,v){return '<div class="c"><div class="n '+cls(v)+' tnum">'+pct(v)+'</div><div class="l">'+l+'</div></div>';}
 function lvl(n,t){return '<div class="lvl"><div class="n tnum">'+fmt(n)+'</div><div class="t">'+t+'</div></div>';}
 function newsHTML(n){return '<div class="it"><div class="h">'+n.title+'</div><div class="m">'+(n.publisher||'')+(n.date?' · '+n.date:'')+'</div></div>';}
+
+function volumeAnalysisHTML(ix){
+  const va=ix.volume_analysis; if(!va) return '';
+  const rc = va.rel_pct>=15?UP:va.rel_pct<=-15?DOWN:GOLD;
+  return '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)">'+
+    '<div class="sub-h">Analisi dei volumi · flusso cumulato (OBV)</div>'+
+    '<div class="chart-box" style="height:110px"><canvas id="c-obv"></canvas></div>'+
+    '<div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px;font-size:13px">'+
+      '<span>Volume vs media 20g <b class="tnum" style="color:'+rc+'">'+pct(va.rel_pct)+'</b></span>'+
+      '<span>OBV (20 sedute) <b>'+va.obv_dir+'</b></span>'+
+      (va.divergence?'<span style="color:'+(va.divergence==="bearish"?DOWN:UP)+'">divergenza '+(va.divergence==="bearish"?"ribassista":"rialzista")+'</span>':'')+
+    '</div>'+
+    '<div style="margin-top:10px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">'+
+        '<span>Compratori '+va.buy_pct+'%</span><span>'+va.sell_pct+'% Venditori</span></div>'+
+      '<div style="height:8px;display:flex;margin-top:3px;border:1px solid var(--rule)">'+
+        '<span style="width:'+va.buy_pct+'%;background:'+UP+'"></span>'+
+        '<span style="width:'+va.sell_pct+'%;background:'+DOWN+'"></span></div>'+
+    '</div>'+
+    '<div class="note" style="margin-top:8px">'+va.text+'</div>'+
+    '</div>';
+}
 
 function historyHTML(ix){
   const st=ix.stats; if(!st) return '';
@@ -675,6 +699,15 @@ function buildDetailCharts(ix){
     {type:'line',data:sub.macd_signal,borderColor:GOLD,borderWidth:1.3,pointRadius:0,tension:.1},
   ]},options:baseOpts({scales:{x:{display:false,grid:{display:false}},y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10}}}}})});
 
+  if(ix.volume_analysis && document.getElementById('c-obv')){
+    const ob=ix.volume_analysis.obv_spark;
+    mk('c-obv',{type:'line',data:{labels:ob.map((_,i)=>i),datasets:[
+      {data:ob,borderColor:cssv('--navy'),borderWidth:1.6,pointRadius:0,fill:true,
+       backgroundColor:cssv('--cfill'),tension:.15}]},
+      options:baseOpts({plugins:{legend:{display:false},tooltip:{enabled:false}},
+        scales:{x:{display:false,grid:{display:false}},
+          y:{grid:{color:GRID},ticks:{display:false}}}})});
+  }
   if(ix.stats && ix.stats.seasonality) buildSeasonality(ix.stats.seasonality);
 }
 

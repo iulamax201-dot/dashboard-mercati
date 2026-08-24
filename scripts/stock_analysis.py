@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
+import analysis
 import indicators as ind
 
 RATING_IT = {
@@ -455,6 +456,7 @@ def build_stock(
         "poc": poc,
         "structure": structure,
         "volumetric": volumetric,
+        "volume_analysis": analysis.volume_report(closes, volumes),
         "signal": signal,
         "technical": {
             "rsi": _r(vrsi),

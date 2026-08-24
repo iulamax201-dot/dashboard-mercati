@@ -379,6 +379,20 @@ function renderDetail(first){
          '<span style="color:var(--muted)">Resistenza <b class="tnum" style="color:var(--ink)">'+money(st.resistance,cur)+'</b></span>'+
        '</div></div>';
   }
+  // analisi dei volumi
+  if(s.volume_analysis){
+    const va=s.volume_analysis, cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+    h+='<div class="act act-'+va.pressure_level+'"><div class="lab">Analisi dei volumi</div>'+
+       '<div class="stance">'+cap(va.pressure)+'</div>'+
+       '<p>'+va.text+'</p>'+
+       '<div style="margin-top:8px">'+
+         '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">'+
+           '<span>Compratori '+va.buy_pct+'%</span><span>'+va.sell_pct+'% Venditori</span></div>'+
+         '<div style="height:8px;display:flex;margin-top:3px;border:1px solid var(--rule)">'+
+           '<span style="width:'+va.buy_pct+'%;background:var(--up)"></span>'+
+           '<span style="width:'+va.sell_pct+'%;background:var(--down)"></span></div>'+
+       '</div></div>';
+  }
   // returns
   const R=s.returns;
   h+='<div class="rets">'+[['1S',R.w1],['1M',R.m1],['3M',R.m3],['6M',R.m6],['1A',R.y1]]

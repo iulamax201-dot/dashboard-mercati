@@ -137,6 +137,28 @@ def main():
          "desc":"Valore dimostrativo del VIX.",
          "sparkline":[round(vlev*(1+random.uniform(-0.15,0.15)),2) for _ in range(40)]}
 
+    # obbligazioni demo (curva rendimenti + ETF bond)
+    demo_yields = []
+    for nm, mo, base in [("3 mesi", 3, 5.2), ("5 anni", 60, 4.3),
+                         ("10 anni", 120, 4.2), ("30 anni", 360, 4.4)]:
+        demo_yields.append({"name": nm, "months": mo, "level": round(base, 2),
+                            "change_bp": random.randint(-6, 6),
+                            "spark": [round(base*(1+random.uniform(-0.03, 0.03)), 2) for _ in range(40)]})
+    demo_etfs = []
+    for tk, nm, grp, px in [("SHY", "Treasury 1-3 anni", "Governativi", 83),
+                            ("IEF", "Treasury 7-10 anni", "Governativi", 96),
+                            ("TLT", "Treasury 20+ anni", "Governativi", 92),
+                            ("LQD", "Corporate investment grade", "Corporate", 110),
+                            ("HYG", "High yield (alto rendimento)", "Corporate", 79),
+                            ("TIP", "Legati all'inflazione (TIPS)", "Inflazione", 108)]:
+        r1 = round(random.uniform(-2, 2), 1); r3 = round(random.uniform(-4, 4), 1)
+        demo_etfs.append({"ticker": tk, "name": nm, "group": grp, "price": px,
+                          "change_pct": round(random.uniform(-0.6, 0.6), 2),
+                          "ret_1m": r1, "ret_3m": r3,
+                          "trend": "up" if r3 > 0 else "down",
+                          "spark": [round(px*(1+random.uniform(-0.02, 0.02)), 2) for _ in range(40)]})
+    bonds = analysis.build_bonds(demo_yields, demo_etfs)
+
     data = {
         "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "source": "Dati dimostrativi (sintetici)",
@@ -146,6 +168,7 @@ def main():
         "europe": europe,
         "vix": vix,
         "rotation": rotation,
+        "bonds": bonds,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:

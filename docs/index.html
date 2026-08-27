@@ -327,6 +327,7 @@ function render(mode){
 
   h += europeHTML();
   h += rotationHTML();
+  h += bondsHTML();
   h += marketNewsHTML();
   h += methodologyHTML();
 
@@ -334,6 +335,10 @@ function render(mode){
   DATA.indices.forEach((ix,i)=>buildSparkData(document.getElementById('sp-'+i), ix.series.close.slice(-40), ix.change_pct>=0));
   if(DATA.europe) DATA.europe.forEach((x,i)=>buildSparkData(document.getElementById('eu-'+i), x.series.close.slice(-40), x.change_pct>=0));
   if(DATA.vix) buildSparkData(document.getElementById('vix-spark'), DATA.vix.sparkline, DATA.vix.change_pct>=0);
+  if(DATA.bonds){
+    buildCurveChart();
+    (DATA.bonds.etfs||[]).forEach((e,i)=>buildSparkData(document.getElementById('bond-'+i), e.spark.slice(-40), e.trend!=='down'));
+  }
   renderDetail();
   motion(mode);
 }
@@ -627,6 +632,62 @@ function rotationHTML(){
   });
   h += '</tbody></table></div>';
   return h;
+}
+
+function bondsHTML(){
+  const b = DATA.bonds; if(!b) return '';
+  const c = b.curve, cr = b.credit;
+  const ccol = c ? (c.status==='Invertita'?DOWN:c.status==='Piatta'?GOLD:UP) : GOLD;
+  let h = '<div class="sec-h">Obbligazioni · Tassi e bond</div>';
+  h += '<div class="grid two">';
+  // curva + rendimenti
+  h += '<div class="panel"><div class="sub-h">Curva dei rendimenti USA</div>'+
+       '<div class="chart-box sm"><canvas id="c-curve"></canvas></div>';
+  if(c) h += '<div class="signal-line" style="margin-top:8px"><span class="signal-tag" style="color:'+ccol+';border-color:'+ccol+'">Curva '+c.status+'</span>'+
+       ' &nbsp; 10 anni − 3 mesi: <b class="tnum" style="color:'+ccol+'">'+(c.spread_10y_3m>=0?'+':'')+fmt(c.spread_10y_3m)+' punti</b></div>'+
+       '<div class="note">'+c.note+'</div>';
+  h += '</div>';
+  // livelli dei rendimenti
+  h += '<div class="panel"><div class="sub-h">Rendimenti dei Treasury</div><div class="dl">';
+  (b.yields||[]).forEach(y=>{
+    const cc = y.change_bp>0?UP:y.change_bp<0?DOWN:'flat';
+    h += '<div class="r"><span class="k">'+y.name+'</span>'+
+         '<span class="v tnum">'+fmt(y.level)+'% <span class="'+cc+'" style="font-size:12px">('+(y.change_bp>=0?'+':'')+y.change_bp+' pb)</span></span></div>';
+  });
+  h += '</div><div class="note" style="margin-top:8px">“Punti base” (pb): 1 pb = 0,01%. La variazione è rispetto alla seduta precedente.</div></div>';
+  h += '</div>';
+  // ETF obbligazionari
+  h += '<div class="panel" style="margin-top:14px"><div class="sub-h">Principali ETF obbligazionari</div>'+
+       '<div class="note" style="margin-top:0">Quando i tassi salgono, il prezzo delle obbligazioni scende (soprattutto sulle scadenze lunghe come i Treasury 20+). Fonte: ETF quotati negli USA.</div>'+
+       '<table class="rot"><tbody>';
+  (b.etfs||[]).forEach((e,i)=>{
+    const tcol = e.trend==='up'?UP:e.trend==='down'?DOWN:GOLD;
+    const tlab = e.trend==='up'?'in salita':e.trend==='down'?'in calo':'laterale';
+    h += '<tr>'+
+      '<td class="nm">'+e.name+' <span class="grp">'+e.ticker+' · '+e.group+'</span></td>'+
+      '<td style="width:90px"><canvas id="bond-'+i+'" width="80" height="26"></canvas></td>'+
+      '<td class="val '+cls(e.change_pct)+'">'+pct(e.change_pct)+'</td>'+
+      '<td class="val" style="width:70px"><span style="font-size:11px;color:var(--muted)">3M</span> <span class="'+cls(e.ret_3m)+'">'+pct(e.ret_3m)+'</span></td>'+
+      '<td style="width:80px;text-align:right"><span style="color:'+tcol+';font-size:12px;font-weight:600">'+tlab+'</span></td>'+
+      '</tr>';
+  });
+  h += '</tbody></table>';
+  if(cr) h += '<div class="signal-line" style="margin-top:10px"><span class="signal-tag" style="color:'+(cr.label==='Propensione al rischio'?UP:cr.label==='Avversione al rischio'?DOWN:GOLD)+';border-color:'+(cr.label==='Propensione al rischio'?UP:cr.label==='Avversione al rischio'?DOWN:GOLD)+'">Credito: '+cr.label+'</span></div>'+
+       '<div class="note">'+cr.note+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function buildCurveChart(){
+  const b=DATA.bonds; if(!b||!b.yields||!document.getElementById('c-curve'))return;
+  const GRID=cssv('--grid'), TICK=cssv('--tick');
+  mk('c-curve',{type:'line',data:{labels:b.yields.map(y=>y.name),datasets:[
+    {data:b.yields.map(y=>y.level),borderColor:cssv('--navy'),backgroundColor:cssv('--cfill'),
+     borderWidth:2,pointRadius:3,pointBackgroundColor:cssv('--navy'),tension:.25,fill:true}]},
+    options:baseOpts({plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>c.parsed.y+'%'}}},
+      scales:{x:{grid:{display:false},ticks:{color:TICK,font:{size:11}}},
+        y:{grid:{color:GRID},ticks:{color:TICK,font:{size:10},callback:v=>v+'%'}}}})});
 }
 
 function marketNewsHTML(){

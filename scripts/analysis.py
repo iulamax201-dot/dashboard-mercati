@@ -556,6 +556,60 @@ def build_longterm(dates: List[str], closes: List[float],
     }
 
 
+def build_bonds(yields: List[Dict], etfs: List[Dict]) -> Dict:
+    """Sezione obbligazionaria: interpreta la curva dei rendimenti USA
+    (normale/piatta/invertita) e la propensione al rischio nel credito
+    (high yield vs investment grade)."""
+    out: Dict = {"yields": yields, "etfs": etfs}
+
+    def lvl(months):
+        for y in yields:
+            if y.get("months") == months:
+                return y.get("level")
+        return None
+
+    y3m, y10, y5, y30 = lvl(3), lvl(120), lvl(60), lvl(360)
+    if y3m is not None and y10 is not None:
+        spread = y10 - y3m
+        if spread < 0:
+            status, note = "Invertita", (
+                "La curva è invertita: i tassi a breve superano quelli a lungo. Storicamente "
+                "è un segnale di rallentamento o recessione in arrivo (spesso con largo anticipo).")
+        elif spread < 0.3:
+            status, note = "Piatta", (
+                "Curva piatta: poca differenza tra tassi a breve e a lungo, segno di incertezza "
+                "sul percorso di crescita e di politica monetaria.")
+        else:
+            status, note = "Normale", (
+                "Curva inclinata verso l'alto (normale): i tassi a lungo superano quelli a breve, "
+                "coerente con aspettative di crescita economica.")
+        out["curve"] = {"status": status, "spread_10y_3m": round(spread, 2), "note": note}
+
+    def ret3(tk):
+        for e in etfs:
+            if e["ticker"] == tk:
+                return e.get("ret_3m")
+        return None
+
+    hy, ig = ret3("HYG"), ret3("LQD")
+    if hy is not None and ig is not None:
+        diff = hy - ig
+        if diff > 1:
+            lab, cnote = "Propensione al rischio", (
+                "L'high yield fa meglio dell'investment grade: appetito per il rischio nel credito "
+                "(risk-on), coerente con un contesto favorevole agli asset più aggressivi.")
+        elif diff < -1:
+            lab, cnote = "Avversione al rischio", (
+                "L'high yield fa peggio dell'investment grade: prudenza o tensione sul credito "
+                "(risk-off), gli investitori chiedono più sicurezza.")
+        else:
+            lab, cnote = "Neutrale", (
+                "High yield e investment grade si muovono in linea: nessun segnale netto di rischio "
+                "sul credito.")
+        out["credit"] = {"label": lab, "diff_3m": round(diff, 1), "note": cnote}
+    return out
+
+
 def market_summary(indices: List[Dict]) -> Dict:
     """Sintesi complessiva del mercato aggregando i tre indici."""
     scores = [i["score"] for i in indices]

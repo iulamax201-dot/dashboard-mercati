@@ -400,6 +400,90 @@ def fetch_vix() -> Optional[Dict]:
         return None
 
 
+# Rendimenti dei Treasury USA (indici Yahoo) e ETF obbligazionari
+YIELDS = [
+    {"name": "3 mesi", "symbol": "%5EIRX", "months": 3},
+    {"name": "5 anni", "symbol": "%5EFVX", "months": 60},
+    {"name": "10 anni", "symbol": "%5ETNX", "months": 120},
+    {"name": "30 anni", "symbol": "%5ETYX", "months": 360},
+]
+BOND_ETFS = [
+    {"ticker": "SHY", "name": "Treasury 1-3 anni", "group": "Governativi"},
+    {"ticker": "IEF", "name": "Treasury 7-10 anni", "group": "Governativi"},
+    {"ticker": "TLT", "name": "Treasury 20+ anni", "group": "Governativi"},
+    {"ticker": "LQD", "name": "Corporate investment grade", "group": "Corporate"},
+    {"ticker": "HYG", "name": "High yield (alto rendimento)", "group": "Corporate"},
+    {"ticker": "TIP", "name": "Legati all'inflazione (TIPS)", "group": "Inflazione"},
+]
+
+
+def fetch_yield(symbol: str) -> Optional[Dict]:
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    try:
+        r = SESSION.get(url, params={"range": "3mo", "interval": "1d"}, timeout=20)
+        if r.status_code != 200:
+            return None
+        q = r.json()["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        closes = [float(c) for c in q if c is not None]
+        if len(closes) < 2:
+            return None
+        # vecchia convenzione Yahoo: rendimento moltiplicato x10 (es. 42.5 = 4.25%)
+        if max(closes) > 25:
+            closes = [c / 10 for c in closes]
+        level, prev = closes[-1], closes[-2]
+        return {"level": round(level, 2),
+                "change_bp": round((level - prev) * 100),   # variazione in punti base
+                "spark": [round(c, 2) for c in closes[-40:]]}
+    except Exception as e:  # noqa: BLE001
+        print(f"  Rendimento {symbol} non disponibile: {e}")
+        return None
+
+
+def fetch_bond_etf(spec: Dict) -> Optional[Dict]:
+    closes = fetch_closes(spec["ticker"], rng="1y")
+    if not closes:
+        return None
+    import indicators as ind
+    price = closes[-1]
+    prev = closes[-2] if len(closes) > 1 else price
+    sma50 = ind.last_valid(ind.sma(closes, 50))
+    sma200 = ind.last_valid(ind.sma(closes, 200))
+    if sma50 is not None and price > sma50 and (sma200 is None or price > sma200):
+        trend = "up"
+    elif sma50 is not None and price < sma50:
+        trend = "down"
+    else:
+        trend = "flat"
+    return {
+        "ticker": spec["ticker"], "name": spec["name"], "group": spec["group"],
+        "price": round(price, 2),
+        "change_pct": round((price / prev - 1) * 100, 2) if prev else 0.0,
+        "ret_1m": round(ind.pct_return(closes, 21), 1) if ind.pct_return(closes, 21) is not None else None,
+        "ret_3m": round(ind.pct_return(closes, 63), 1) if ind.pct_return(closes, 63) is not None else None,
+        "trend": trend,
+        "spark": [round(c, 2) for c in closes[-40:]],
+    }
+
+
+def fetch_bonds() -> Optional[Dict]:
+    yields = []
+    for y in YIELDS:
+        d = fetch_yield(y["symbol"])
+        if d:
+            d.update({"name": y["name"], "months": y["months"]})
+            yields.append(d)
+        time.sleep(0.2)
+    etfs = []
+    for spec in BOND_ETFS:
+        d = fetch_bond_etf(spec)
+        if d:
+            etfs.append(d)
+        time.sleep(0.25)
+    if not yields and not etfs:
+        return None
+    return analysis.build_bonds(yields, etfs)
+
+
 def build() -> Dict:
     indices_out: List[Dict] = []
     source = "Yahoo Finance"
@@ -445,6 +529,8 @@ def build() -> Dict:
     europe = fetch_europe()
     print("Scarico VIX...")
     vix = fetch_vix()
+    print("Scarico obbligazioni (tassi e bond)...")
+    bonds = fetch_bonds()
 
     market = analysis.market_summary(indices_out)
     market["news_market"] = market_news
@@ -460,6 +546,7 @@ def build() -> Dict:
         "europe": europe,
         "vix": vix,
         "rotation": rotation,
+        "bonds": bonds,
     }
 
 

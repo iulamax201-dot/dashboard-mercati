@@ -59,6 +59,7 @@ STOCKS = [
     {"name": "D-Wave Quantum", "ticker": "QBTS", "symbol": "QBTS", "theme": "Tech · Quantum computing (speculativo)"},
     {"name": "Oro", "ticker": "GC=F", "symbol": "GC=F", "theme": "Materie prime · Bene rifugio"},
     {"name": "Argento", "ticker": "SI=F", "symbol": "SI=F", "theme": "Materie prime · Metallo prezioso"},
+    {"name": "Palladio", "ticker": "PA=F", "symbol": "PA=F", "theme": "Materie prime · Metallo prezioso"},
     {"name": "Mais", "ticker": "ZC=F", "symbol": "ZC=F", "theme": "Materie prime · Agricole"},
     {"name": "Grano", "ticker": "ZW=F", "symbol": "ZW=F", "theme": "Materie prime · Agricole"},
 ]

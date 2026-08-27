@@ -43,6 +43,7 @@ SEEDS = [
     {"name": "D-Wave Quantum", "ticker": "QBTS", "cur": "USD", "mkt": "NYSE", "theme": "Tech · Quantum computing (speculativo)", "start": 8.5, "drift": 0.001, "vol": 0.06},
     {"name": "Oro", "ticker": "GC=F", "cur": "USD", "mkt": "COMEX", "theme": "Materie prime · Bene rifugio", "start": 2400, "drift": 0.0006, "vol": 0.01, "metal": True},
     {"name": "Argento", "ticker": "SI=F", "cur": "USD", "mkt": "COMEX", "theme": "Materie prime · Metallo prezioso", "start": 30, "drift": 0.0007, "vol": 0.018, "metal": True},
+    {"name": "Palladio", "ticker": "PA=F", "cur": "USD", "mkt": "NYMEX", "theme": "Materie prime · Metallo prezioso", "start": 1100, "drift": 0.0003, "vol": 0.02, "metal": True},
     {"name": "Mais", "ticker": "ZC=F", "cur": "USd", "mkt": "CBOT", "theme": "Materie prime · Agricole", "start": 430, "drift": 0.0002, "vol": 0.016, "metal": True},
     {"name": "Grano", "ticker": "ZW=F", "cur": "USd", "mkt": "CBOT", "theme": "Materie prime · Agricole", "start": 570, "drift": 0.0002, "vol": 0.018, "metal": True},
 ]

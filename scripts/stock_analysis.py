@@ -257,7 +257,7 @@ def _volumetric(dates, opens, highs, lows, closes, volumes, currency, poc_dict):
     }
 
 
-def _buy_signal(verdict, rsi, fair, structure, volumetric, currency):
+def _buy_signal(verdict, rsi, fair, structure, volumetric, currency, sma200=None):
     """Sintetizza le analisi in un segnale operativo: setup d'acquisto,
     da osservare, oppure non ora. Euristico, solo scopo educativo."""
     def m(v):
@@ -283,16 +283,38 @@ def _buy_signal(verdict, rsi, fair, structure, volumetric, currency):
             t += f", con retest verso il POC ({m(poc)})"
         return t + "."
 
-    # struttura debole / ribassista
+    def trig_sma200():
+        return ("Conferma: recupero e tenuta sopra la media a 200 giorni"
+                + (f" (~{m(sma200)})" if sma200 else "") + ".")
+
+    # giudizio di fondo debole (ribassista o sotto la media di lungo)
     if trend_down or verdict == "Bearish":
+        # base di accumulo/costruzione: prezzo sul/sopra il POC con struttura
+        # non ribassista o POC che migra verso i minimi
+        constructive = not trend_down and (
+            (bias == "Rialzista" and above_poc) or (mig == "verso_minimi" and (comp or above_poc)))
+        if constructive:
+            reasons = []
+            if above_poc:
+                reasons.append("Il prezzo ha riconquistato il POC (area di controllo dei volumi): "
+                               "possibile base di accumulo.")
+            if mig == "verso_minimi":
+                reasons.append("Il POC migra verso i minimi: accumulo in profondità («alberello»).")
+            if bias == "Rialzista":
+                reasons.append("La struttura recente segna massimi e minimi crescenti.")
+            reasons.append("Ma il giudizio tecnico di fondo resta debole: il prezzo è ancora sotto "
+                           "la media a 200 giorni.")
+            return {"level": "watch", "label": "Base in costruzione",
+                    "reasons": reasons, "trigger": trig_sma200()}
         if mig == "verso_minimi" and comp:
             return {"level": "watch", "label": "Possibile accumulo",
-                    "reasons": ["Struttura ancora debole ma POC in migrazione verso i minimi e "
+                    "reasons": ["Giudizio ancora debole ma POC in migrazione verso i minimi e "
                                 "volatilità compressa: possibile base di accumulo."],
                     "trigger": trig_breakout()}
-        return {"level": "no", "label": "Non ora",
-                "reasons": ["Struttura debole/ribassista: meglio attendere segnali di inversione."],
-                "trigger": None}
+        reason = ("Struttura ribassista: meglio attendere segnali di inversione." if trend_down
+                  else "Giudizio tecnico debole (prezzo sotto la media a 200 giorni): "
+                       "meglio attendere conferma.")
+        return {"level": "no", "label": "Non ora", "reasons": [reason], "trigger": None}
 
     # trend non ribassista
     strong = (verdict == "Bullish" and (trend_up or breakout_up) and above_poc
@@ -434,7 +456,7 @@ def build_stock(
     volumetric = _volumetric(dates, opens, highs, lows, closes, volumes, currency, poc)
 
     # segnale operativo di sintesi (quando comprare secondo le analisi)
-    signal = _buy_signal(verdict, vrsi, fair, structure, volumetric, currency)
+    signal = _buy_signal(verdict, vrsi, fair, structure, volumetric, currency, v200)
 
     hist_len = min(len(closes), 520)
     s = len(closes) - hist_len

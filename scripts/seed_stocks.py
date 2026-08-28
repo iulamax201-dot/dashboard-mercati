@@ -31,6 +31,7 @@ SEEDS = [
     {"name": "SK Hynix", "ticker": "000660.KS", "cur": "KRW", "mkt": "Seoul", "theme": "Tech · AI / Semiconduttori (memorie)", "start": 205000, "drift": 0.0011, "vol": 0.024},
     {"name": "Taiwan Semiconductor", "ticker": "TSM", "cur": "USD", "mkt": "NYSE", "theme": "Tech · AI / Semiconduttori (foundry)", "start": 185, "drift": 0.001, "vol": 0.02},
     {"name": "STMicroelectronics", "ticker": "STM", "cur": "USD", "mkt": "NYSE", "theme": "Tech · Semiconduttori (Europa)", "start": 30, "drift": 0.0005, "vol": 0.022},
+    {"name": "Kyndryl Holdings", "ticker": "KD", "cur": "USD", "mkt": "NYSE", "theme": "Tech · Servizi IT / Infrastrutture", "start": 35, "drift": 0.0008, "vol": 0.025},
     {"name": "JPMorgan", "ticker": "JPM", "cur": "USD", "mkt": "NYSE", "theme": "Finanza · Banche", "start": 205, "drift": 0.0005, "vol": 0.013},
     {"name": "Intesa Sanpaolo", "ticker": "ISP.MI", "cur": "EUR", "mkt": "Milano", "theme": "Finanza · Banche (Italia)", "start": 3.9, "drift": 0.0006, "vol": 0.014},
     {"name": "Italgas", "ticker": "IG.MI", "cur": "EUR", "mkt": "Milano", "theme": "Utility · Infrastrutture gas (Italia)", "start": 6.2, "drift": 0.0004, "vol": 0.011},
